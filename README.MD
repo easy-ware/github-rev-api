@@ -64,8 +64,8 @@ This API server is particularly useful in scenarios like:
 
 1.  **Clone the Repository:**
     ```bash
-    git clone <https://github.com/easy-ware/github-rev-api>
-    cd <github-rev-api>
+    git clone https://github.com/easy-ware/github-rev-api
+    cd github-rev-api
     ```
 
 2.  **Choose a Running Method:**
