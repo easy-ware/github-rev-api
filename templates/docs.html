@@ -1,0 +1,3164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gh-manager API Server Documentation</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Google Material Icons (Outlined for consistency) -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa; /* Sidebars, code blocks */
+            --bg-tertiary: #e9ecef; /* Borders, subtle backgrounds */
+            --bg-accent-light: #e0f2f1; /* Light teal bg for info */
+            --bg-warning-light: #fffbeb; /* Light yellow bg for warning */
+
+            --text-primary: #212529;
+            --text-secondary: #495057; /* Softer text */
+            --text-tertiary: #6c757d; /* Even softer, like TOC links */
+
+            --accent-primary: #0d9488; /* Teal */
+            --accent-secondary: #0f766e; /* Darker Teal */
+            --accent-border: #99f6e4; /* Teal border for info */
+            --warning-primary: #f59e0b; /* Amber */
+            --warning-secondary: #d97706; /* Darker Amber */
+            --warning-border: #fde68a; /* Amber border for warning */
+
+            --link-color: var(--accent-primary);
+            --link-hover-color: var(--accent-secondary);
+            --code-text: #343a40;
+
+            --border-color: var(--bg-tertiary);
+            --border-radius: 6px;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+            --sidebar-width: 260px;
+            --right-sidebar-width: 240px;
+            --header-height: 60px;
+            --content-max-width: 800px; /* Max width for main text */
+
+             /* --- RESPONSIVE: Variables to hold current effective widths --- */
+            --current-sidebar-width: var(--sidebar-width);
+            --current-right-sidebar-width: var(--right-sidebar-width);
+            --sidebar-drawer-width: 280px; /* Width of sidebar when it's a mobile drawer */
+        }
+
+        body.dark-mode {
+            --bg-primary: #18181b; /* Zinc 900 */
+            --bg-secondary: #27272a; /* Zinc 800 */
+            --bg-tertiary: #3f3f46; /* Zinc 700 */
+            --bg-accent-light: #273938; /* Dark teal bg */
+            --bg-warning-light: #45350f; /* Dark yellow bg */
+
+            --text-primary: #f4f4f5; /* Zinc 100 */
+            --text-secondary: #a1a1aa; /* Zinc 400 */
+            --text-tertiary: #71717a; /* Zinc 500 */
+
+            --accent-primary: #2dd4bf; /* Lighter Teal */
+            --accent-secondary: #5eead4;
+            --accent-border: #0f766e; /* Darker teal border */
+            --warning-primary: #fcd34d; /* Lighter Amber */
+            --warning-secondary: #fbbf24;
+            --warning-border: #b45309; /* Darker amber border */
+
+            --link-color: var(--accent-primary);
+            --link-hover-color: var(--accent-secondary);
+            --code-text: #e4e4e7; /* Zinc 200 */
+
+            --border-color: var(--bg-tertiary);
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Reset and Base Styles */
+        *, *::before, *::after { box-sizing: border-box; }
+        html { font-size: 16px; scroll-padding-top: calc(var(--header-height) + 20px); scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            line-height: 1.7;
+            transition: background-color 0.3s, color 0.3s;
+             overflow-x: hidden; /* Prevent horizontal scroll caused by drawer transitions */
+        }
+        a { color: var(--link-color); text-decoration: none; transition: color 0.2s; }
+        a:hover { color: var(--link-hover-color); text-decoration: underline; }
+
+        /* Header */
+        .page-header {
+            background-color: var(--bg-primary);
+            padding: 0 25px;
+            height: var(--header-height);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 1000; /* Above content and sidebars, except mobile close */
+            transition: background-color 0.3s, border-color 0.3s, padding 0.3s ease-in-out;
+        }
+        .page-header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: font-size 0.3s ease-in-out;
+        }
+        .header-controls { display: flex; align-items: center; gap: 10px; }
+        .icon-button {
+            background: none; border: none; cursor: pointer;
+            color: var(--text-secondary); padding: 8px; border-radius: var(--border-radius);
+            display: flex; align-items: center; justify-content: center; transition: background-color 0.2s, color 0.2s;
+        }
+        .icon-button:hover { background-color: var(--bg-secondary); color: var(--text-primary); }
+        .icon-button .material-icons-outlined { font-size: 24px; }
+        #mode-toggle .dark-icon { display: none; }
+        body.dark-mode #mode-toggle .light-icon { display: none; }
+        body.dark-mode #mode-toggle .dark-icon { display: inline-block; }
+
+        /* --- RESPONSIVE: Hide menu toggle button by default --- */
+        #menu-toggle {
+            display: none; /* Hidden by default on larger screens */
+            z-index: 1002; /* Ensures it's clickable above other elements if needed */
+        }
+
+        /* Main Layout Container */
+        .container { display: flex; position: relative; }
+
+        /* Left Sidebar (Navigation) */
+        .sidebar-nav {
+            /* --- RESPONSIVE: Use dynamic variable for width --- */
+            width: var(--current-sidebar-width);
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 25px 15px 25px 25px;
+            position: fixed;
+            top: var(--header-height); /* Position below header */
+            left: 0;
+            height: calc(100vh - var(--header-height)); /* Full height below header */
+            overflow-y: auto;
+            /* --- RESPONSIVE: Add transitions for responsive changes --- */
+            transition: background-color 0.3s, border-color 0.3s, left 0.3s ease-in-out, width 0.3s ease-in-out, transform 0.3s ease-in-out;
+            z-index: 999; /* Below header, above main content */
+        }
+        .sidebar-nav ul { list-style: none; padding: 0; margin: 0; }
+        .sidebar-nav li { margin: 0; }
+        .sidebar-nav ul ul { padding-left: 20px; margin-top: 4px; margin-bottom: 4px; } /* Indent sub-items */
+        .sidebar-nav a {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 10px; margin-bottom: 2px;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem; font-weight: 500;
+            color: var(--text-secondary);
+            transition: background-color 0.2s, color 0.2s;
+            white-space: nowrap; /* Keep links on one line */
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sidebar-nav a .material-icons-outlined { font-size: 20px; opacity: 0.8; flex-shrink: 0; }
+        .sidebar-nav a:hover { background-color: var(--bg-tertiary); color: var(--text-primary); }
+        .sidebar-nav a.active {
+            background-color: var(--accent-primary);
+            color: #ffffff; /* White text on accent */
+        }
+        body.dark-mode .sidebar-nav a.active {
+             color: var(--bg-primary); /* Dark text on light accent */
+        }
+        .sidebar-nav a.active .material-icons-outlined { opacity: 1; }
+
+        /* --- RESPONSIVE: Hide close button by default --- */
+        #close-sidebar {
+            display: none; /* Hidden by default on larger screens */
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1002; /* Ensures clickable inside the drawer */
+        }
+
+        /* Main Content Area Wrapper (holds content and right sidebar) */
+        .main-content-area {
+            flex-grow: 1;
+            /* --- RESPONSIVE: Use dynamic variable for margin --- */
+            margin-left: var(--current-sidebar-width);
+            display: flex;
+            justify-content: center; /* Center the content & right sidebar group */
+            padding: 0 30px; /* Padding around content + right-sidebar */
+             /* --- RESPONSIVE: Add transitions --- */
+            transition: margin-left 0.3s ease-in-out, padding 0.3s ease-in-out;
+            position: relative; /* Needed for right sidebar sticky positioning */
+        }
+
+        /* Main Content Column */
+        .content {
+            max-width: var(--content-max-width);
+            width: 100%; /* Take available width up to max-width */
+            padding: 30px 0; /* Vertical padding */
+            min-height: calc(100vh - var(--header-height));
+             /* --- RESPONSIVE: Add transitions --- */
+            transition: padding 0.3s ease-in-out, max-width 0.3s ease-in-out;
+             flex-shrink: 1; /* Allow shrinking if needed */
+             overflow: hidden; /* Prevent content like wide tables from breaking layout */
+        }
+
+        /* Content Sections (Pages) */
+        .content > section { display: none; animation: fadeIn 0.4s ease-out; }
+        .content > section.active-page { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Content Typography & Elements */
+        h1, h2, h3, h4, h5, h6 { scroll-margin-top: calc(var(--header-height) + 20px); }
+        h2 {
+            font-size: 1.8rem; font-weight: 700; color: var(--text-primary);
+            margin-top: 2.5em; margin-bottom: 1em;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 0.4em;
+        }
+        h3 { font-size: 1.4rem; font-weight: 600; color: var(--text-primary); margin-top: 2em; margin-bottom: 0.8em; }
+        h4 { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin-top: 1.8em; margin-bottom: 0.6em; }
+        h2:first-child, section > h3:first-child, section > h4:first-child { margin-top: 0; }
+        p { margin-bottom: 1.2em; color: var(--text-secondary); }
+        ul, ol { padding-left: 25px; margin-bottom: 1.2em; color: var(--text-secondary); }
+        li { margin-bottom: 0.5em; }
+        strong { font-weight: 600; color: var(--text-primary); }
+        hr { border: 0; border-top: 1px solid var(--border-color); margin: 2.5em 0; }
+        /* --- ADDED: Simple table style --- */
+        table.param-table {
+            width: 100%;
+            margin-bottom: 1.5em;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        table.param-table th, table.param-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        table.param-table th {
+            background-color: var(--bg-secondary);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        table.param-table td:nth-child(1) { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; color: var(--code-text); }
+        table.param-table td:nth-child(3) { text-align: center; }
+
+        /* Code Blocks */
+        pre {
+            background-color: var(--bg-secondary); color: var(--code-text);
+            padding: 18px 20px; border-radius: var(--border-radius);
+            overflow-x: auto; /* Keep horizontal scroll for code */
+            position: relative; border: 1px solid var(--border-color);
+            margin: 1.5em 0; font-size: 0.9rem; line-height: 1.6;
+        }
+        code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: inherit; }
+        /* Inline code */
+        p code, li code, h2 code, h3 code, h4 code {
+             background-color: var(--bg-tertiary); color: var(--code-text);
+             padding: 0.2em 0.4em; border-radius: 4px; font-size: 85%;
+             word-break: break-word;
+        }
+        .copy-btn {
+            position: absolute; top: 12px; right: 12px;
+            background: var(--bg-tertiary); color: var(--text-tertiary);
+            border: none; padding: 5px 8px; border-radius: var(--border-radius);
+            cursor: pointer; font-size: 0.75rem; font-weight: 500;
+            opacity: 0.5; transition: all 0.2s; display: flex; align-items: center; gap: 4px;
+        }
+         .copy-btn .material-icons-outlined { font-size: 16px; }
+        pre:hover .copy-btn { opacity: 1; }
+        .copy-btn:hover { background-color: var(--accent-primary); color: #fff; }
+        body.dark-mode .copy-btn:hover { color: var(--bg-primary); }
+        .copy-btn.copied { background-color: var(--accent-secondary); color: #fff; opacity: 1; }
+        body.dark-mode .copy-btn.copied { color: var(--bg-primary); }
+
+        /* Info and Warning Boxes */
+        .info-box, .warning-box {
+            padding: 15px 20px; margin: 1.5em 0;
+            border-radius: var(--border-radius); border-left-width: 4px; border-left-style: solid;
+            display: flex; align-items: flex-start; gap: 12px;
+        }
+        .info-box { background-color: var(--bg-accent-light); border-color: var(--accent-primary); color: var(--accent-secondary); }
+        .warning-box { background-color: var(--bg-warning-light); border-color: var(--warning-primary); color: var(--warning-secondary); }
+        .info-box .material-icons-outlined, .warning-box .material-icons-outlined {
+            font-size: 22px; position: relative; top: 2px; flex-shrink: 0;
+        }
+        .info-box { color: #0f766e; } /* Darker teal text for light bg */
+        .warning-box { color: #b45309; } /* Darker amber text for light bg */
+        body.dark-mode .info-box { color: var(--accent-primary); } /* Brighter teal text for dark bg */
+        body.dark-mode .warning-box { color: var(--warning-primary); } /* Brighter amber text for dark bg */
+        .info-box p:last-child, .warning-box p:last-child { margin-bottom: 0; }
+        .info-box strong, .warning-box strong { color: inherit; font-weight: 600; }
+
+        /* Right Sidebar (On This Page TOC) */
+        .right-sidebar {
+            /* --- RESPONSIVE: Use dynamic variable --- */
+            width: var(--current-right-sidebar-width);
+            padding: 30px 0 30px 30px; /* Padding left to separate from content */
+            position: sticky;
+            top: var(--header-height); /* Stick below header */
+            height: calc(100vh - var(--header-height)); /* Full height below header */
+            overflow-y: auto;
+            font-size: 0.8rem;
+            flex-shrink: 0; /* Don't allow it to shrink */
+             /* --- RESPONSIVE: Add transitions --- */
+            transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out, padding 0.3s ease-in-out, visibility 0.3s;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .right-sidebar h5 {
+            font-size: 0.9rem; font-weight: 600; color: var(--text-primary);
+            margin-top: 0; margin-bottom: 1em;
+        }
+        #toc-list { list-style: none; padding: 0; margin: 0; border-left: 1px solid var(--border-color); }
+        #toc-list li { margin: 0; }
+        #toc-list a {
+            display: block; padding: 6px 15px; color: var(--text-tertiary);
+            border-left: 2px solid transparent; /* Placeholder for active indicator */
+            transition: all 0.2s;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        #toc-list a:hover { color: var(--text-primary); background-color: var(--bg-secondary); }
+        #toc-list a.toc-active {
+            color: var(--link-color); font-weight: 500;
+            border-left-color: var(--link-color);
+        }
+        /* Indentation for heading levels */
+        #toc-list a.toc-h3 { padding-left: 25px; }
+        #toc-list a.toc-h4 { padding-left: 35px; }
+
+        /* Pagination Footer Container */
+        .pagination-nav-container {
+            /* --- RESPONSIVE: Use dynamic margin, match main content padding --- */
+            margin-left: var(--current-sidebar-width);
+            padding: 0 30px; /* Match .main-content-area padding */
+            transition: margin-left 0.3s ease-in-out, padding 0.3s ease-in-out;
+        }
+        /* Pagination Wrapper (aligns with content width) */
+        .pagination-nav-wrapper {
+            /* --- RESPONSIVE: Align with main content max-width --- */
+            max-width: var(--content-max-width);
+            margin: 0 auto; /* Center the wrapper */
+            width: 100%;
+            transition: max-width 0.3s ease-in-out;
+        }
+        /* Pagination Navigation Links */
+        .pagination-nav {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 3em; padding-top: 1.5em;
+            border-top: 1px solid var(--border-color);
+        }
+        .pagination-nav a {
+            display: inline-flex; flex-direction: column;
+            padding: 10px 15px; border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            transition: border-color 0.2s, background-color 0.2s;
+            color: var(--text-secondary);
+            max-width: 48%; /* Prevent overlap */
+        }
+        .pagination-nav a:hover { background-color: var(--bg-secondary); border-color: var(--text-tertiary); color: var(--text-primary); text-decoration: none; }
+        .pagination-nav .nav-direction { font-size: 0.8rem; color: var(--text-tertiary); margin-bottom: 4px; }
+        .pagination-nav .nav-title { font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pagination-nav .nav-prev { text-align: left; }
+        .pagination-nav .nav-next { text-align: right; }
+        .pagination-nav a.disabled { visibility: hidden; /* Hide instead of disabling */ }
+
+
+        /* Request Example Tabs */
+        .request-examples {
+            margin-top: 1.5em;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+        .example-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-secondary);
+            padding: 0 10px;
+             overflow-x: auto; /* Allow horizontal scroll on small screens */
+             -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+        }
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px; /* Overlap border-bottom */
+            transition: color 0.2s, border-color 0.2s;
+            white-space: nowrap; /* Prevent wrapping */
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .tab-button:hover {
+            color: var(--text-primary);
+        }
+        .tab-button.active {
+            color: var(--link-color);
+            border-bottom-color: var(--link-color);
+        }
+        .example-content .code-example {
+            display: none; /* Hide inactive tabs */
+        }
+        .example-content .code-example.active {
+            display: block; /* Show active tab */
+        }
+        /* Remove margin from pre inside the tabs */
+        .example-content pre {
+            margin: 0;
+            border: none;
+            border-radius: 0;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
+        /* Adjust copy button position for non-margined pre */
+        .example-content pre .copy-btn {
+            top: 10px;
+            right: 10px;
+        }
+        /* Add specific styles for Postman explanation paragraphs */
+        .code-example[data-lang="postman"] p {
+            font-size: 0.85em;
+            margin: 10px 20px 10px 20px; /* Add some padding */
+            color: var(--text-tertiary);
+            line-height: 1.4;
+        }
+        /* Ensure Postman JSON example block still has standard pre padding */
+        .code-example[data-lang="postman"] pre {
+             padding: 18px 20px;
+        }
+
+
+        /* ======================================== */
+        /* ===== RESPONSIVE ADJUSTMENTS START ===== */
+        /* ======================================== */
+
+        /* Large Tablets / Small Laptops (1200px -> 993px) */
+        @media (max-width: 1200px) {
+             :root {
+                 /* Slightly smaller sidebars */
+                 --current-sidebar-width: 240px;
+                 --current-right-sidebar-width: 220px;
+             }
+             /* Adjust padding for main area and pagination */
+             .main-content-area { padding: 0 20px; }
+             .pagination-nav-container { padding: 0 20px; }
+        }
+
+        /* Tablets (Portrait & Landscape) (992px -> 769px) */
+        @media (max-width: 992px) {
+            :root {
+                /* Right sidebar hidden, effective width is 0 */
+                --current-right-sidebar-width: 0px;
+            }
+            /* Hide Right Sidebar */
+            .right-sidebar {
+                display: none; /* Completely hide */
+                /* Redundant safety styles */
+                width: 0;
+                padding: 0;
+                opacity: 0;
+                visibility: hidden;
+            }
+            /* Adjust main content area */
+            .main-content-area {
+                 justify-content: flex-start; /* Align content left */
+                 /* Padding inherited from 1200px breakpoint */
+            }
+            /* Allow content and pagination to use full width */
+             .content,
+             .pagination-nav-wrapper {
+                 max-width: none;
+             }
+        }
+
+        /* Mobile Phones (Portrait & Landscape) (<= 768px) */
+        @media (max-width: 768px) {
+            :root {
+                 /* Left sidebar hidden off-canvas, effective layout width is 0 */
+                 --current-sidebar-width: 0px;
+                 /* Keep right sidebar width at 0 as well */
+                 --current-right-sidebar-width: 0px;
+            }
+
+            /* Show Menu Toggle Button */
+            #menu-toggle {
+                display: flex;
+            }
+
+            /* Style Left Sidebar as Off-Canvas Drawer */
+            .sidebar-nav {
+                width: var(--sidebar-drawer-width); /* Use the explicit drawer width */
+                /* --- Changed: Use transform for smoother animation --- */
+                transform: translateX(calc(-1 * var(--sidebar-drawer-width)));
+                left: 0; /* Set left to 0, control visibility via transform */
+                top: 0; /* Align to viewport top */
+                height: 100vh; /* Full viewport height */
+                z-index: 1001; /* Above content, below header controls */
+                box-shadow: var(--shadow-md);
+                border-right: none;
+                position: fixed; /* Ensure it's fixed for viewport height */
+            }
+            /* Style for when sidebar is open */
+            .sidebar-nav.open {
+                /* --- Changed: Use transform --- */
+                 transform: translateX(0);
+            }
+
+            /* Show Close Button inside sidebar */
+            #close-sidebar {
+                display: flex;
+            }
+
+            /* Adjust Main Content Area */
+            .main-content-area {
+                margin-left: 0; /* No left margin */
+                padding: 0 15px; /* Reduced padding */
+                justify-content: flex-start;
+            }
+
+            /* Adjust Content Padding */
+            .content {
+                padding: 20px 0; /* Reduced vertical padding */
+                max-width: none; /* Full width */
+            }
+
+            /* Adjust Header */
+            .page-header {
+                 padding: 0 15px; /* Reduced padding */
+            }
+            .page-header h1 {
+                 font-size: 1.1rem; /* Slightly smaller title */
+            }
+
+            /* Adjust Pagination Container */
+            .pagination-nav-container {
+                margin-left: 0;
+                padding: 0 15px; /* Match main content area padding */
+            }
+             .pagination-nav-wrapper {
+                 max-width: none;
+             }
+              /* Make pagination links slightly smaller if needed */
+              .pagination-nav a {
+                  padding: 8px 10px;
+              }
+              .pagination-nav .nav-title {
+                   font-size: 0.9rem;
+              }
+        }
+
+        /* ====================================== */
+        /* ===== RESPONSIVE ADJUSTMENTS END ===== */
+        /* ====================================== */
+
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <button id="menu-toggle" class="icon-button" aria-label="Open Menu">
+            <span class="material-icons-outlined">menu</span>
+        </button>
+        <h1><span class="material-icons-outlined">description</span> gh-manager API</h1>
+        <div class="header-controls">
+             <!-- Add other controls like search here if needed -->
+            <button id="mode-toggle" class="icon-button" aria-label="Toggle dark/light mode">
+                <span class="material-icons-outlined light-icon">light_mode</span>
+                <span class="material-icons-outlined dark-icon">dark_mode</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <nav class="sidebar-nav" id="sidebar-nav">
+            <button id="close-sidebar" class="icon-button" aria-label="Close Menu">
+                <span class="material-icons-outlined">close</span>
+            </button>
+            <ul>
+                <li><a href="#introduction" data-page-id="introduction"><i class="material-icons-outlined">info</i> Introduction</a></li>
+                <li><a href="#getting-started" data-page-id="getting-started"><i class="material-icons-outlined">play_arrow</i> Getting Started</a></li>
+                <li><a href="#core-concepts" data-page-id="core-concepts"><i class="material-icons-outlined">lightbulb</i> Core Concepts</a></li>
+                <li><a href="#api-endpoints" data-page-id="api-endpoints"><i class="material-icons-outlined">api</i> API Endpoints</a></li>
+                <li><a href="#special-workflow-asset-upload" data-page-id="special-workflow-asset-upload"><i class="material-icons-outlined">upload_file</i> Asset Upload Workflow</a></li>
+                <li><a href="#conclusion" data-page-id="conclusion"><i class="material-icons-outlined">check_circle</i> Conclusion</a></li>
+            </ul>
+             <!-- You can add more sections/links here -->
+        </nav>
+
+        <div class="main-content-area">
+            <main class="content" id="main-content">
+
+                <!-- Page 1: Introduction -->
+                <section id="introduction" data-page-title="Introduction">
+                    <!-- Content as originally provided -->
+                    <p>The <code>gh-manager</code> API server provides a RESTful interface for interacting with GitHub repositories. It allows developers to programmatically manage repositories, files within repositories, releases, and release assets without directly using the GitHub web interface or the <code>git</code> command line for these specific tasks.</p>
+                    <p>This API acts as a wrapper around the <a href="https://pygithub.readthedocs.io/en/latest/" target="_blank" rel="noopener noreferrer">PyGithub</a> library, exposing common operations via HTTP endpoints secured by GitHub Personal Access Tokens (PATs). It features structured JSON responses, robust error handling, and a dedicated workflow for handling release asset uploads.</p>
+
+                    <div class="info-box">
+                        <span class="material-icons-outlined">info</span>
+                        <div>
+                            <p><strong>Purpose:</strong> This document details how to set up, run, and interact with the API server, covering prerequisites, core concepts, and detailed endpoint specifications.</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <h2 id="intro-scope">Scope</h2>
+                    <p>This documentation covers Version 1.0 of the API server, based on the provided <code>server.py</code> script. Future versions may introduce changes or additional features not covered here.</p>
+                </section>
+
+                <!-- Page 2: Getting Started -->
+                <section id="getting-started" data-page-title="Getting Started">
+                     <!-- Content as originally provided -->
+                    <h2 id="prerequisites">Prerequisites</h2>
+                    <ul>
+                        <li><strong>Python 3:</strong> Ensure you have Python 3.8 or newer installed. You can check with <code>python --version</code> or <code>python3 --version</code>.</li>
+                        <li><strong>pip:</strong> Python's package installer, usually included with Python. Verify with <code>pip --version</code> or <code>pip3 --version</code>.</li>
+                        <li><strong>GitHub Personal Access Token (PAT):</strong> You need a PAT from GitHub with appropriate permissions (scopes) for the operations you intend to perform.
+                            <ul>
+                                <li>Minimum required: <code>repo</code> (Full control of private repositories)</li>
+                                <li>For full functionality (including deleting test repos): <code>repo</code>, <code>delete_repo</code></li>
+                            </ul>
+                            <div class="info-box">
+                                <span class="material-icons-outlined">link</span>
+                                <div><p>Generate a new PAT in your GitHub settings: <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">github.com/settings/tokens</a>. Remember to copy the token immediately as it won't be shown again.</p></div>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <h2 id="installation">Installation</h2>
+                    <ol>
+                        <li><strong>Save the Server Code:</strong> Obtain the Python server script and save it as <code>server.py</code> in a dedicated directory.</li>
+                        <li><strong>Install Dependencies:</strong> Open your terminal or command prompt, navigate (`cd`) into the directory where you saved <code>server.py</code>, and run:
+                            <pre><code class="language-bash">pip install Flask PyGithub python-dotenv requests</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                             <p>This command installs Flask (the web framework), PyGithub (the GitHub API library), python-dotenv (for environment variables), and requests (used internally and by the helper script).</p>
+                        </li>
+                    </ol>
+
+                    <h2 id="running-the-server">Running the Server</h2>
+                    <h3 id="running-env-vars">Environment Variables (Optional)</h3>
+                     <p>Configure the server's host, port, and debug mode using environment variables for flexibility:</p>
+                     <ul>
+                         <li><code>HOST</code>: IP address to bind to. Default: <code>127.0.0.1</code> (local access). Use <code>0.0.0.0</code> for network access (be careful).</li>
+                         <li><code>PORT</code>: Port number. Default: <code>5000</code>.</li>
+                         <li><code>FLASK_DEBUG</code>: Set to <code>1</code> or <code>true</code> for debug mode (auto-reload, better errors). Default: <code>false</code>.</li>
+                     </ul>
+
+                     <div class="warning-box">
+                        <span class="material-icons-outlined">warning</span>
+                         <div><p><strong>Security Risk:</strong> Never run the server with <code>FLASK_DEBUG=1</code> in a production environment. It can expose sensitive information and allow arbitrary code execution.</p></div>
+                     </div>
+
+                     <p>You can set these directly in your shell:</p>
+                     <pre><code class="language-bash"># Example for Linux/macOS
+export FLASK_DEBUG=1
+export PORT=5001</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+
+                     <p>Alternatively, create a file named <code>.env</code> in the same directory as <code>server.py</code>:</p>
+                    <pre><code class="language-dotenv"># .env file content
+FLASK_DEBUG=true
+HOST=0.0.0.0
+PORT=5001
+# GITHUB_TOKEN=... # Not typically needed here, passed via request headers</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                    <p>The server uses <code>python-dotenv</code> to automatically load variables from this <code>.env</code> file if it exists.</p>
+
+                    <h3 id="running-start-commands">Starting the Server</h3>
+                    <p>Choose one of the following methods:</p>
+                    <ol>
+                        <li>
+                            <strong>Using the <code>flask</code> command (Recommended):</strong>
+                            <pre><code class="language-bash"># Ensure FLASK_APP is set (or name your file app.py)
+export FLASK_APP=server.py
+# Optionally set FLASK_DEBUG, HOST, PORT if not using .env
+
+# Run the server (adjust host/port if needed)
+flask run --host=0.0.0.0 --port=5000</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                         <li>
+                            <strong>Directly using <code>python</code>:</strong>
+                            <pre><code class="language-bash"># Environment variables (shell or .env) will be used for config
+python server.py</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                    </ol>
+                    <p>If successful, you should see output indicating the server is running, usually including the address like `http://127.0.0.1:5000/`.</p>
+                </section>
+
+                <!-- Page 3: Core Concepts -->
+                <section id="core-concepts" data-page-title="Core Concepts">
+                    <!-- Content as originally provided -->
+                    <h2 id="authentication">Authentication</h2>
+                    <p>All functional API endpoints (excluding the root <code>/</code> and helper script endpoint) require authentication using a GitHub Personal Access Token (PAT). The server expects the token in **every request** via specific HTTP headers.</p>
+                    <p>Provide the token using one of these headers:</p>
+                    <ol>
+                        <li><code>X-API-Token: YOUR_GITHUB_PAT</code></li>
+                        <li><code>Authorization: Bearer YOUR_GITHUB_PAT</code></li>
+                    </ol>
+                    <p>Replace <code>YOUR_GITHUB_PAT</code> with your actual token.</p>
+
+                    <div class="warning-box">
+                        <span class="material-icons-outlined">security</span>
+                        <div><p><strong>Security Best Practice:</strong> Treat your PAT like a password. Do not embed it directly in client-side code or commit it to version control. Use environment variables or secure configuration methods to manage tokens.</p></div>
+                    </div>
+
+                    <h3 id="auth-scopes">Token Scopes</h3>
+                    <p>The required permissions (scopes) for your PAT depend on the actions you perform:</p>
+                    <ul>
+                        <li><strong>Essential:</strong> <code>repo</code> scope is needed for almost all operations (creating repos, managing files, releases, assets in private *and* public repos).</li>
+                        <li><strong>Optional:</strong> <code>delete_repo</code> scope is required *only* if you intend to use this API to delete repositories (which is not currently an endpoint in the provided server code, but good to know for potential extensions).</li>
+                    </ul>
+                    <p>If a request fails with a <code>401 Unauthorized</code> or <code>403 Forbidden</code> error, double-check your token and its associated scopes in your GitHub settings.</p>
+
+                    <h2 id="base-url">Base URL</h2>
+                    <p>The Base URL is the root address where the API server is accessible. By default, this is <code>http://127.0.0.1:5000</code> when running locally.</p>
+                    <p>All endpoint paths documented later are relative to this Base URL. For example, the "Create Repository" endpoint path is <code>/repo/create</code>, so the full URL would be <code>http://127.0.0.1:5000/repo/create</code>.</p>
+
+                    <h2 id="request-format">Request Format</h2>
+                    <ul>
+                        <li><strong>Method:</strong> Use the correct HTTP method (<code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>DELETE</code>) specified for each endpoint.</li>
+                        <li><strong>Headers:</strong>
+                            <ul>
+                                <li>Include the authentication header (<code>X-API-Token</code> or <code>Authorization: Bearer</code>).</li>
+                                <li>For requests with a body (<code>POST</code>, <code>PUT</code>), set the <code>Content-Type</code> header to <code>application/json</code>.</li>
+                            </ul>
+                        </li>
+                        <li><strong>URL Parameters:</strong> Some endpoints include variables in the path itself (e.g., <code>/repo/{owner}/{repo_name}/file</code>). Replace placeholders like <code>{owner}</code> with actual values.</li>
+                        <li><strong>Request Body:</strong> For <code>POST</code> and <code>PUT</code> requests requiring data, send a JSON object in the request body as specified in the endpoint documentation.</li>
+                    </ul>
+
+                    <h2 id="response-format">Response Format</h2>
+                    <p>The API uses JSON for all responses (except potentially the raw script download).</p>
+
+                    <h3 id="response-success">Success Responses</h3>
+                    <ul>
+                        <li><strong>Status Code:</strong> Typically <code>200 OK</code> (successful GET/PUT/DELETE), <code>201 Created</code> (successful POST creating a resource), or <code>204 No Content</code> (success, no body needed).</li>
+                        <li><strong>Body Structure:</strong>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    // Results specific to the endpoint appear here
+    "message": "Optional success message (e.g., Repository created)",
+    "status": "Optional status indicator (e.g., uploaded, deleted)",
+    // ... other data fields like id, url, etc.
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                    </ul>
+
+                    <h3 id="response-error">Error Responses</h3>
+                     <ul>
+                        <li><strong>Status Code:</strong> Standard HTTP error codes (<code>4xx</code> for client errors, <code>5xx</code> for server errors). See <a href="#error-handling">Error Handling</a> below.</li>
+                        <li><strong>Body Structure:</strong>
+                            <pre><code class="language-json">{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE_STRING", // A machine-readable error identifier
+    "message": "A human-readable explanation of the error.",
+    "details": "..." // Optional: More specific info, often from GitHub's API
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                    </ul>
+
+                    <h2 id="error-handling">Error Handling</h2>
+                    <p>The API provides feedback through HTTP status codes and detailed JSON error bodies.</p>
+
+                    <h3 id="error-http-codes">Common HTTP Status Codes</h3>
+                     <ul style="columns: 2; -webkit-columns: 2; -moz-columns: 2;">
+                        <li><code>200 OK</code>: Success.</li>
+                        <li><code>201 Created</code>: Resource created.</li>
+                        <li><code>204 No Content</code>: Success, no body.</li>
+                        <li><code>400 Bad Request</code>: Invalid request (missing data, bad format).</li>
+                        <li><code>401 Unauthorized</code>: Authentication required or failed.</li>
+                        <li><code>403 Forbidden</code>: Authenticated, but lacking permissions (check PAT scopes).</li>
+                        <li><code>404 Not Found</code>: Resource (repo, file, release, etc.) or API route not found.</li>
+                        <li><code>405 Method Not Allowed</code>: Incorrect HTTP verb used for the endpoint.</li>
+                        <li><code>409 Conflict</code>: Action conflicts with current state (e.g., asset name exists).</li>
+                        <li><code>422 Unprocessable Entity</code>: GitHub validation failed (e.g., invalid repo name, tag missing).</li>
+                        <li><code>500 Internal Server Error</code>: Unexpected server-side issue.</li>
+                        <li><code>502 Bad Gateway</code>: Network error contacting GitHub.</li>
+                        <li><code>504 Gateway Timeout</code>: GitHub request timed out.</li>
+                     </ul>
+
+                     <h3 id="error-custom-codes">Custom Error Codes (in JSON <code>error.code</code>)</h3>
+                     <p>These provide more specific reasons within the JSON error body:</p>
+                     <ul style="columns: 2; -webkit-columns: 2; -moz-columns: 2;">
+                        <li><code>AUTH_REQUIRED</code></li>
+                        <li><code>AUTH_FAILED</code></li>
+                        <li><code>MISSING_PARAMETER</code></li>
+                        <li><code>INVALID_INPUT</code></li>
+                        <li><code>BAD_REQUEST</code></li>
+                        <li><code>RESOURCE_NOT_FOUND</code></li>
+                        <li><code>ROUTE_NOT_FOUND</code></li>
+                        <li><code>METHOD_NOT_ALLOWED</code></li>
+                        <li><code>VALIDATION_ERROR</code></li>
+                        <li><code>GITHUB_API_ERROR</code> (Check <code>details</code>)</li>
+                        <li><code>RESOURCE_CONFLICT</code></li>
+                        <li><code>NETWORK_ERROR</code></li>
+                        <li><code>INTERNAL_ERROR</code></li>
+                     </ul>
+                     <p>Always check the <code>error</code> object in the JSON response for detailed diagnostics when a request fails.</p>
+                </section>
+
+                <!-- Page 4: API Endpoints -->
+                <section id="api-endpoints" data-page-title="API Endpoints">
+                    <p>This section details the available API endpoints, including required parameters, request formats, and example responses.</p>
+
+                    <h2 id="root">Root Endpoint</h2>
+                    <ul>
+                        <li><strong>Endpoint:</strong> <code>GET /</code></li>
+                        <li><strong>Description:</strong> Confirms the server is running and gives basic hints.</li>
+                        <li><strong>Authentication:</strong> None required.</li>
+                        <li><strong>Success Response (200 OK):</strong>
+                            <pre><code class="language-json">{
+  "success": true,
+  "message": "gh-manager API server is running.",
+  "documentation_hint": "Send requests to specific endpoints...",
+  "authentication": "Requires 'X-API-Token' or 'Authorization: Bearer <token>' header.",
+  "upload_script_endpoint": "/get/v1/upload-script"
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                        <li><strong>Request Examples:</strong>
+                            <div class="request-examples">
+                                <div class="example-tabs">
+                                    <button class="tab-button active" data-target-lang="curl">cURL</button>
+                                    <button class="tab-button" data-target-lang="python-requests">Python (requests)</button>
+                                    <button class="tab-button" data-target-lang="python-urllib">Python (urllib)</button>
+                                    <button class="tab-button" data-target-lang="postman">Postman</button> <!-- Added Postman Tab -->
+                                </div>
+                                <div class="example-content">
+                                    <div class="code-example active" data-lang="curl">
+                                        <pre><code class="language-bash"># Base URL assumed to be http://127.0.0.1:5000
+curl http://127.0.0.1:5000/</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-requests">
+                                        <pre><code class="language-python">import requests
+import json
+
+base_url = "http://127.0.0.1:5000"
+endpoint = "/"
+
+try:
+    response = requests.get(base_url + endpoint)
+    response.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
+    print(json.dumps(response.json(), indent=2))
+except requests.exceptions.RequestException as e:
+    print(f"An error occurred: {e}")
+    if e.response is not None:
+        try:
+            print("Error details:", json.dumps(e.response.json(), indent=2))
+        except json.JSONDecodeError:
+            print("Error details (non-JSON):", e.response.text)
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-urllib">
+                                        <pre><code class="language-python">import urllib.request
+import json
+from urllib.error import URLError, HTTPError
+
+base_url = "http://127.0.0.1:5000"
+endpoint = "/"
+url = base_url + endpoint
+
+req = urllib.request.Request(url, method='GET')
+
+try:
+    with urllib.request.urlopen(req) as response:
+        response_body = response.read().decode('utf-8')
+        print(json.dumps(json.loads(response_body), indent=2))
+except HTTPError as e:
+    print(f"HTTP Error: {e.code} {e.reason}")
+    try:
+        error_body = e.read().decode('utf-8')
+        print("Error details:", json.dumps(json.loads(error_body), indent=2))
+    except (json.JSONDecodeError, AttributeError):
+        print("Error details (non-JSON or unreadable):", getattr(e, 'fp', 'N/A').read() if hasattr(e, 'fp') else 'N/A')
+except URLError as e:
+    print(f"URL Error: {e.reason}")
+except Exception as e:
+    print(f"An unexpected error occurred: {e}")
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="postman"> <!-- Added Postman Example -->
+                                        <p>Create a new request in Postman with the following details (replace <code>{{base_url}}</code> if needed):</p>
+                                        <pre><code class="language-json">{
+  "method": "GET",
+  "url": "{{base_url}}/",
+  "header": [],
+  "body": null
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                    <hr/>
+
+                    <h2 id="repository-management">Repository Management</h2>
+
+                    <h3 id="create-repository">Create Repository</h3>
+                     <ul>
+                        <li><strong>Endpoint:</strong> <code>POST /repo/create</code></li>
+                        <li><strong>Description:</strong> Creates a new GitHub repository for the authenticated user.</li>
+                        <li><strong>Authentication:</strong> Required (<code>repo</code> scope).</li>
+                        <li><strong>Request Body (JSON):</strong>
+                            <table class="param-table">
+                                <!-- Original table content restored -->
+                                <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>name</code></td><td>string</td><td>Yes</td><td>Name for the new repository.</td></tr>
+                                    <tr><td><code>description</code></td><td>string</td><td>No</td><td>Repository description. Default: <code>""</code>.</td></tr>
+                                    <tr><td><code>private</code></td><td>boolean</td><td>No</td><td>Set to <code>true</code> for a private repository. Default: <code>false</code>.</td></tr>
+                                    <tr><td><code>homepage</code></td><td>string</td><td>No</td><td>Repository homepage URL. Default: <code>""</code>.</td></tr>
+                                    <tr><td><code>add_readme</code></td><td>boolean</td><td>No</td><td>Initialize with a README? Default: <code>false</code>.</td></tr>
+                                    <tr><td><code>readme_content</code></td><td>string</td><td>No</td><td>Custom README content. If set, implies <code>add_readme: true</code>. Default: Server's default content if <code>add_readme</code> is true.</td></tr>
+                                </tbody>
+                            </table>
+                        </li>
+                        <li><strong>Success Response (201 Created):</strong>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "full_name": "username/repo-name",
+    "url": "https://github.com/username/repo-name",
+    "id": 123456789,
+    "private": false,
+    "description": "Description provided",
+    "readme_added": true, // Boolean indicating if README was attempted/created
+    "readme_error": null // String with error if README creation failed, else null
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                        <li><strong>Common Errors:</strong> <code>400</code> (Missing `name`), <code>401</code> (Auth failed), <code>422</code> (Repo name invalid/exists).</li>
+                        <li><strong>Request Examples:</strong>
+                             <div class="request-examples">
+                                <div class="example-tabs">
+                                    <button class="tab-button active" data-target-lang="curl">cURL</button>
+                                    <button class="tab-button" data-target-lang="python-requests">Python (requests)</button>
+                                    <button class="tab-button" data-target-lang="python-urllib">Python (urllib)</button>
+                                    <button class="tab-button" data-target-lang="postman">Postman</button> <!-- Added Postman Tab -->
+                                </div>
+                                <div class="example-content">
+                                    <div class="code-example active" data-lang="curl">
+                                        <pre><code class="language-bash"># Replace YOUR_GITHUB_PAT with your actual token
+# Base URL assumed to be http://127.0.0.1:5000
+curl -X POST http://127.0.0.1:5000/repo/create \
+ -H "Content-Type: application/json" \
+ -H "X-API-Token: YOUR_GITHUB_PAT" \
+ -d '{
+      "name": "my-api-created-repo",
+      "description": "Testing the API server",
+      "private": true,
+      "add_readme": true
+    }'</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-requests">
+                                        <pre><code class="language-python">import requests
+import json
+import os
+
+# Best practice: Get token from environment variable
+github_token = os.environ.get("GITHUB_PAT") # Or replace with your actual token string
+if not github_token:
+    raise ValueError("GitHub PAT not found in environment variable GITHUB_PAT")
+
+base_url = "http://127.0.0.1:5000"
+endpoint = "/repo/create"
+
+headers = {
+    "Content-Type": "application/json",
+    "X-API-Token": github_token
+    # Or use: "Authorization": f"Bearer {github_token}"
+}
+
+payload = {
+    "name": "my-api-created-repo-py-req",
+    "description": "Testing from Python requests",
+    "private": False,
+    "add_readme": True
+}
+
+try:
+    response = requests.post(base_url + endpoint, headers=headers, json=payload)
+    response.raise_for_status()
+    print("Repository created successfully:")
+    print(json.dumps(response.json(), indent=2))
+except requests.exceptions.RequestException as e:
+    print(f"An error occurred: {e}")
+    if e.response is not None:
+        try:
+            print("Error details:", json.dumps(e.response.json(), indent=2))
+        except json.JSONDecodeError:
+            print("Error details (non-JSON):", e.response.text)
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-urllib">
+                                        <pre><code class="language-python">import urllib.request
+import json
+import os
+from urllib.error import URLError, HTTPError
+
+# Best practice: Get token from environment variable
+github_token = os.environ.get("GITHUB_PAT") # Or replace with your actual token string
+if not github_token:
+    raise ValueError("GitHub PAT not found in environment variable GITHUB_PAT")
+
+base_url = "http://127.0.0.1:5000"
+endpoint = "/repo/create"
+url = base_url + endpoint
+
+headers = {
+    "Content-Type": "application/json",
+    "X-API-Token": github_token
+    # Or use: "Authorization": f"Bearer {github_token}"
+}
+
+payload = {
+    "name": "my-api-created-repo-py-url",
+    "description": "Testing from Python urllib",
+    "private": False,
+    "add_readme": True
+}
+data = json.dumps(payload).encode('utf-8') # Data needs to be bytes
+
+req = urllib.request.Request(url, data=data, headers=headers, method='POST')
+
+try:
+    with urllib.request.urlopen(req) as response:
+        print(f"Repository created successfully (Status: {response.status})")
+        response_body = response.read().decode('utf-8')
+        print(json.dumps(json.loads(response_body), indent=2))
+except HTTPError as e:
+    print(f"HTTP Error: {e.code} {e.reason}")
+    try:
+        error_body = e.read().decode('utf-8')
+        print("Error details:", json.dumps(json.loads(error_body), indent=2))
+    except (json.JSONDecodeError, AttributeError):
+         print("Error details (non-JSON or unreadable):", getattr(e, 'fp', 'N/A').read() if hasattr(e, 'fp') else 'N/A')
+except URLError as e:
+    print(f"URL Error: {e.reason}")
+except Exception as e:
+    print(f"An unexpected error occurred: {e}")
+
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="postman"> <!-- Added Postman Example -->
+                                        <p>Create a new request in Postman. Set Method to POST, add Headers, and set Body to 'raw' JSON. Replace <code>{{base_url}}</code> and <code>{{YOUR_GITHUB_PAT}}</code>.</p>
+                                        <pre><code class="language-json">{
+  "method": "POST",
+  "url": "{{base_url}}/repo/create",
+  "header": [
+    { "key": "Content-Type", "value": "application/json" },
+    { "key": "X-API-Token", "value": "{{YOUR_GITHUB_PAT}}" }
+  ],
+  "body": {
+    "mode": "raw",
+    "raw": "{\n  \"name\": \"my-postman-repo\",\n  \"description\": \"Created via Postman example\",\n  \"private\": false,\n  \"add_readme\": true\n}"
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                     </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                    <hr/>
+
+                    <h2 id="file-management">File Management</h2>
+                    <p>Manage files within a repository's default branch.</p>
+
+                    <h3 id="upload-file">Upload File</h3>
+                    <ul>
+                        <!-- Original content restored -->
+                        <li><strong>Endpoint:</strong> <code>POST /repo/{owner}/{repo_name}/file</code></li>
+                        <li><strong>Description:</strong> Creates a new file. Fails if the file already exists at the specified path.</li>
+                         <li><strong>URL Parameters:</strong>
+                            <ul>
+                                <li><code>{owner}</code>: Repository owner (username/org).</li>
+                                <li><code>{repo_name}</code>: Repository name.</li>
+                            </ul>
+                         </li>
+                        <li><strong>Authentication:</strong> Required (<code>repo</code> scope).</li>
+                        <li><strong>Request Body (JSON):</strong>
+                             <table class="param-table">
+                                <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>path</code></td><td>string</td><td>Yes</td><td>Full path within the repo (e.g., <code>src/config.yml</code>).</td></tr>
+                                    <tr><td><code>content</code></td><td>string</td><td>Yes</td><td>File content.</td></tr>
+                                    <tr><td><code>message</code></td><td>string</td><td>No</td><td>Commit message. Default: <code>"Add file via gh-manager API"</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </li>
+                        <li><strong>Success Response (201 Created):</strong>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "path": "src/config.yml",
+    "commit_sha": "commit_hash_string...",
+    "status": "uploaded"
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                        <li><strong>Common Errors:</strong> <code>400</code>, <code>401</code>, <code>404</code> (Repo not found), <code>422</code> (File exists).</li>
+                        <li><strong>Request Examples:</strong>
+                            <div class="request-examples">
+                                <div class="example-tabs">
+                                    <button class="tab-button active" data-target-lang="curl">cURL</button>
+                                    <button class="tab-button" data-target-lang="python-requests">Python (requests)</button>
+                                    <button class="tab-button" data-target-lang="python-urllib">Python (urllib)</button>
+                                    <button class="tab-button" data-target-lang="postman">Postman</button> <!-- Added Postman Tab -->
+                                </div>
+                                <div class="example-content">
+                                    <div class="code-example active" data-lang="curl">
+                                        <pre><code class="language-bash"># Replace YOUR_GITHUB_PAT, your-user, your-repo
+# Base URL assumed to be http://127.0.0.1:5000
+OWNER="your-user"
+REPO="my-api-created-repo"
+curl -X POST http://127.0.0.1:5000/repo/$OWNER/$REPO/file \
+ -H "Content-Type: application/json" \
+ -H "X-API-Token: YOUR_GITHUB_PAT" \
+ -d '{
+      "path": "app/settings.txt",
+      "content": "Setting1=Value1\nSetting2=Value2",
+      "message": "feat: Add initial application settings"
+    }'</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-requests">
+                                        <pre><code class="language-python">import requests
+import json
+import os
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+endpoint = f"/repo/{owner}/{repo_name}/file"
+
+headers = {
+    "Content-Type": "application/json",
+    "X-API-Token": github_token
+}
+
+payload = {
+    "path": "config/new_config.json",
+    "content": '{\n  \"theme\": \"dark\",\n  \"port\": 8080\n}',
+    "message": "chore: Add new configuration file"
+}
+
+try:
+    response = requests.post(base_url + endpoint, headers=headers, json=payload)
+    response.raise_for_status()
+    print("File uploaded successfully:")
+    print(json.dumps(response.json(), indent=2))
+except requests.exceptions.RequestException as e:
+    print(f"An error occurred: {e}")
+    if e.response is not None:
+        try:
+            print("Error details:", json.dumps(e.response.json(), indent=2))
+        except json.JSONDecodeError:
+            print("Error details (non-JSON):", e.response.text)
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-urllib">
+                                        <pre><code class="language-python">import urllib.request
+import json
+import os
+from urllib.error import URLError, HTTPError
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+endpoint = f"/repo/{owner}/{repo_name}/file"
+url = base_url + endpoint
+
+headers = {
+    "Content-Type": "application/json",
+    "X-API-Token": github_token
+}
+
+payload = {
+    "path": "data/another_file.txt",
+    "content": "This is content created via urllib.",
+    "message": "docs: Add file using urllib"
+}
+data = json.dumps(payload).encode('utf-8')
+
+req = urllib.request.Request(url, data=data, headers=headers, method='POST')
+
+try:
+    with urllib.request.urlopen(req) as response:
+        print(f"File uploaded successfully (Status: {response.status})")
+        response_body = response.read().decode('utf-8')
+        print(json.dumps(json.loads(response_body), indent=2))
+except HTTPError as e:
+    print(f"HTTP Error: {e.code} {e.reason}")
+    try:
+        error_body = e.read().decode('utf-8')
+        print("Error details:", json.dumps(json.loads(error_body), indent=2))
+    except (json.JSONDecodeError, AttributeError):
+         print("Error details (non-JSON or unreadable):", getattr(e, 'fp', 'N/A').read() if hasattr(e, 'fp') else 'N/A')
+except URLError as e:
+    print(f"URL Error: {e.reason}")
+except Exception as e:
+    print(f"An unexpected error occurred: {e}")
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="postman"> <!-- Added Postman Example -->
+                                        <p>Replace <code>{{base_url}}</code>, <code>{{owner}}</code>, <code>{{repo_name}}</code>, <code>{{YOUR_GITHUB_PAT}}</code>.</p>
+                                        <pre><code class="language-json">{
+  "method": "POST",
+  "url": "{{base_url}}/repo/{{owner}}/{{repo_name}}/file",
+  "header": [
+    { "key": "Content-Type", "value": "application/json" },
+    { "key": "X-API-Token", "value": "{{YOUR_GITHUB_PAT}}" }
+  ],
+  "body": {
+    "mode": "raw",
+    "raw": "{\n  \"path\": \"logs/postman_log.txt\",\n  \"content\": \"Log entry from Postman.\",\n  \"message\": \"feat: Add log file via Postman\"\n}"
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                     </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <h3 id="update-file">Update File</h3>
+                     <ul>
+                         <!-- Original content restored -->
+                        <li><strong>Endpoint:</strong> <code>PUT /repo/{owner}/{repo_name}/file/{file_path}</code></li>
+                        <li><strong>Description:</strong> Updates an existing file. Fails if the file does not exist.</li>
+                         <li><strong>URL Parameters:</strong>
+                            <ul>
+                                <li><code>{owner}</code>: Repository owner.</li>
+                                <li><code>{repo_name}</code>: Repository name.</li>
+                                <li><code>{file_path}</code>: Full path of the file to update (URL-encode if needed).</li>
+                            </ul>
+                         </li>
+                        <li><strong>Authentication:</strong> Required (<code>repo</code> scope).</li>
+                        <li><strong>Request Body (JSON):</strong>
+                             <table class="param-table">
+                                <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>content</code></td><td>string</td><td>Yes</td><td>The <strong>new</strong> file content.</td></tr>
+                                    <tr><td><code>message</code></td><td>string</td><td>No</td><td>Commit message. Default: <code>"Update file via gh-manager API"</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </li>
+                        <li><strong>Success Response (200 OK):</strong>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "path": "app/settings.txt",
+    "commit_sha": "new_commit_hash_string...",
+    "status": "updated"
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                         <li><strong>Common Errors:</strong> <code>400</code>, <code>401</code>, <code>404</code> (Repo or file not found).</li>
+                        <li><strong>Request Examples:</strong>
+                            <div class="request-examples">
+                                <div class="example-tabs">
+                                    <button class="tab-button active" data-target-lang="curl">cURL</button>
+                                    <button class="tab-button" data-target-lang="python-requests">Python (requests)</button>
+                                    <button class="tab-button" data-target-lang="python-urllib">Python (urllib)</button>
+                                    <button class="tab-button" data-target-lang="postman">Postman</button> <!-- Added Postman Tab -->
+                                </div>
+                                <div class="example-content">
+                                    <div class="code-example active" data-lang="curl">
+                                        <pre><code class="language-bash"># Replace YOUR_GITHUB_PAT, your-user, your-repo
+# URL Encode file path if it contains special characters
+# Assuming app/settings.txt exists
+OWNER="your-user"
+REPO="my-api-created-repo"
+FILE_PATH="app/settings.txt" # Basic path, no encoding needed here
+# Example with path needing encoding: FILE_PATH=$(python -c "import urllib.parse; print(urllib.parse.quote('folder name/file name.txt'))")
+
+curl -X PUT http://127.0.0.1:5000/repo/$OWNER/$REPO/file/$FILE_PATH \
+ -H "Content-Type: application/json" \
+ -H "X-API-Token: YOUR_GITHUB_PAT" \
+ -d '{
+      "content": "Setting1=UpdatedValue\nSetting2=Value2\nNewSetting=Added",
+      "message": "fix: Update Setting1 and add NewSetting"
+    }'</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-requests">
+                                        <pre><code class="language-python">import requests
+import json
+import os
+import urllib.parse
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+file_path_raw = "app/settings.txt" # Replace with the file to update
+# URL-encode the file path
+file_path_encoded = urllib.parse.quote(file_path_raw, safe='')
+
+endpoint = f"/repo/{owner}/{repo_name}/file/{file_path_encoded}"
+
+headers = {
+    "Content-Type": "application/json",
+    "X-API-Token": github_token
+}
+
+payload = {
+    "content": "Setting1=FinalValue\nSetting2=AnotherValue",
+    "message": "refactor: Update settings file content"
+}
+
+try:
+    response = requests.put(base_url + endpoint, headers=headers, json=payload)
+    response.raise_for_status()
+    print(f"File '{file_path_raw}' updated successfully:")
+    print(json.dumps(response.json(), indent=2))
+except requests.exceptions.RequestException as e:
+    print(f"An error occurred: {e}")
+    if e.response is not None:
+        try:
+            print("Error details:", json.dumps(e.response.json(), indent=2))
+        except json.JSONDecodeError:
+            print("Error details (non-JSON):", e.response.text)
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-urllib">
+                                        <pre><code class="language-python">import urllib.request
+import urllib.parse
+import json
+import os
+from urllib.error import URLError, HTTPError
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+file_path_raw = "app/settings.txt" # Replace
+file_path_encoded = urllib.parse.quote(file_path_raw, safe='')
+endpoint = f"/repo/{owner}/{repo_name}/file/{file_path_encoded}"
+url = base_url + endpoint
+
+headers = {
+    "Content-Type": "application/json",
+    "X-API-Token": github_token
+}
+
+payload = {
+    "content": "Final content from urllib",
+    "message": "docs: Update using urllib PUT"
+}
+data = json.dumps(payload).encode('utf-8')
+
+req = urllib.request.Request(url, data=data, headers=headers, method='PUT')
+
+try:
+    with urllib.request.urlopen(req) as response:
+        print(f"File '{file_path_raw}' updated successfully (Status: {response.status})")
+        response_body = response.read().decode('utf-8')
+        print(json.dumps(json.loads(response_body), indent=2))
+except HTTPError as e:
+    print(f"HTTP Error: {e.code} {e.reason}")
+    try:
+        error_body = e.read().decode('utf-8')
+        print("Error details:", json.dumps(json.loads(error_body), indent=2))
+    except (json.JSONDecodeError, AttributeError):
+         print("Error details (non-JSON or unreadable):", getattr(e, 'fp', 'N/A').read() if hasattr(e, 'fp') else 'N/A')
+except URLError as e:
+    print(f"URL Error: {e.reason}")
+except Exception as e:
+    print(f"An unexpected error occurred: {e}")
+
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                     <div class="code-example" data-lang="postman"> <!-- Added Postman Example -->
+                                        <p>Replace <code>{{base_url}}</code>, <code>{{owner}}</code>, <code>{{repo_name}}</code>, <code>{{file_path}}</code> (URL-encoded!), <code>{{YOUR_GITHUB_PAT}}</code>.</p>
+                                        <pre><code class="language-json">{
+  "method": "PUT",
+  "url": "{{base_url}}/repo/{{owner}}/{{repo_name}}/file/{{file_path}}",
+  "header": [
+    { "key": "Content-Type", "value": "application/json" },
+    { "key": "X-API-Token", "value": "{{YOUR_GITHUB_PAT}}" }
+  ],
+  "body": {
+    "mode": "raw",
+    "raw": "{\n  \"content\": \"Updated content from Postman.\",\n  \"message\": \"fix: Update file via Postman\"\n}"
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                     </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <h3 id="delete-file">Delete File</h3>
+                    <ul>
+                        <!-- Original content restored -->
+                       <li><strong>Endpoint:</strong> <code>DELETE /repo/{owner}/{repo_name}/file/{file_path}</code></li>
+                        <li><strong>Description:</strong> Deletes an existing file.</li>
+                         <li><strong>URL Parameters:</strong>
+                            <ul>
+                                <li><code>{owner}</code>: Repository owner.</li>
+                                <li><code>{repo_name}</code>: Repository name.</li>
+                                <li><code>{file_path}</code>: Full path of the file to delete (URL-encode if needed).</li>
+                            </ul>
+                         </li>
+                        <li><strong>Authentication:</strong> Required (<code>repo</code> scope).</li>
+                        <li><strong>Request Body (JSON, Optional):</strong>
+                             <table class="param-table">
+                                <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>message</code></td><td>string</td><td>No</td><td>Commit message. Default: <code>"Delete file via gh-manager API"</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </li>
+                        <li><strong>Success Response (200 OK):</strong>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "path": "app/settings.txt",
+    "commit_sha": "delete_commit_hash_string...",
+    "status": "deleted"
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                        <li><strong>Common Errors:</strong> <code>400</code> (Invalid JSON body if provided), <code>401</code>, <code>404</code> (Repo or file not found).</li>
+                        <li><strong>Request Examples:</strong>
+                            <div class="request-examples">
+                                <div class="example-tabs">
+                                    <button class="tab-button active" data-target-lang="curl">cURL</button>
+                                    <button class="tab-button" data-target-lang="python-requests">Python (requests)</button>
+                                    <button class="tab-button" data-target-lang="python-urllib">Python (urllib)</button>
+                                    <button class="tab-button" data-target-lang="postman">Postman</button> <!-- Added Postman Tab -->
+                                </div>
+                                <div class="example-content">
+                                    <div class="code-example active" data-lang="curl">
+                                        <pre><code class="language-bash"># Replace YOUR_GITHUB_PAT, your-user, your-repo
+# Delete with custom message (requires body)
+OWNER="your-user"
+REPO="my-api-created-repo"
+FILE_PATH="app/settings.txt" # URL-encode if needed
+curl -X DELETE http://127.0.0.1:5000/repo/$OWNER/$REPO/file/$FILE_PATH \
+ -H "Content-Type: application/json" \
+ -H "X-API-Token: YOUR_GITHUB_PAT" \
+ -d '{"message": "refactor: Remove obsolete settings file"}'
+
+# Delete without custom message (no body needed)
+FILE_PATH_2="config/new_config.json" # URL-encode if needed
+curl -X DELETE http://127.0.0.1:5000/repo/$OWNER/$REPO/file/$FILE_PATH_2 \
+ -H "X-API-Token: YOUR_GITHUB_PAT"
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-requests">
+                                        <pre><code class="language-python">import requests
+import json
+import os
+import urllib.parse
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+
+# --- Example 1: Delete with message ---
+file_path_raw_1 = "app/settings.txt" # File to delete
+file_path_encoded_1 = urllib.parse.quote(file_path_raw_1, safe='')
+endpoint_1 = f"/repo/{owner}/{repo_name}/file/{file_path_encoded_1}"
+headers_1 = {
+    "Content-Type": "application/json", # Needed because we send a body
+    "X-API-Token": github_token
+}
+payload_1 = {"message": "chore: Delete settings file via requests"}
+
+print(f"Attempting to delete '{file_path_raw_1}' with message...")
+try:
+    response = requests.delete(base_url + endpoint_1, headers=headers_1, json=payload_1)
+    response.raise_for_status()
+    print(f"File '{file_path_raw_1}' deleted successfully:")
+    print(json.dumps(response.json(), indent=2))
+except requests.exceptions.RequestException as e:
+    print(f"Failed to delete '{file_path_raw_1}': {e}")
+    if e.response is not None:
+        try: print("Error details:", json.dumps(e.response.json(), indent=2))
+        except json.JSONDecodeError: print("Error details (non-JSON):", e.response.text)
+
+# --- Example 2: Delete without message ---
+file_path_raw_2 = "data/another_file.txt" # Another file to delete
+file_path_encoded_2 = urllib.parse.quote(file_path_raw_2, safe='')
+endpoint_2 = f"/repo/{owner}/{repo_name}/file/{file_path_encoded_2}"
+headers_2 = {"X-API-Token": github_token} # No Content-Type needed
+
+print(f"\nAttempting to delete '{file_path_raw_2}' without message...")
+try:
+    response = requests.delete(base_url + endpoint_2, headers=headers_2)
+    response.raise_for_status()
+    print(f"File '{file_path_raw_2}' deleted successfully:")
+    print(json.dumps(response.json(), indent=2))
+except requests.exceptions.RequestException as e:
+    print(f"Failed to delete '{file_path_raw_2}': {e}")
+    if e.response is not None:
+        try: print("Error details:", json.dumps(e.response.json(), indent=2))
+        except json.JSONDecodeError: print("Error details (non-JSON):", e.response.text)
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-urllib">
+                                        <pre><code class="language-python">import urllib.request
+import urllib.parse
+import json
+import os
+from urllib.error import URLError, HTTPError
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+
+# --- Example 1: Delete with message ---
+file_path_raw_1 = "app/settings.txt" # Replace if already deleted
+file_path_encoded_1 = urllib.parse.quote(file_path_raw_1, safe='')
+url_1 = f"{base_url}/repo/{owner}/{repo_name}/file/{file_path_encoded_1}"
+headers_1 = {
+    "Content-Type": "application/json",
+    "X-API-Token": github_token
+}
+payload_1 = {"message": "chore: Delete settings file via urllib"}
+data_1 = json.dumps(payload_1).encode('utf-8')
+req_1 = urllib.request.Request(url_1, data=data_1, headers=headers_1, method='DELETE')
+
+print(f"Attempting to delete '{file_path_raw_1}' with message...")
+try:
+    with urllib.request.urlopen(req_1) as response:
+        print(f"File '{file_path_raw_1}' deleted successfully (Status: {response.status})")
+        response_body = response.read().decode('utf-8')
+        print(json.dumps(json.loads(response_body), indent=2))
+except HTTPError as e:
+    print(f"Failed to delete '{file_path_raw_1}': {e.code} {e.reason}")
+    try: print("Error details:", json.dumps(json.loads(e.read().decode('utf-8')), indent=2))
+    except (json.JSONDecodeError, AttributeError): print("Error details unreadable.")
+except URLError as e: print(f"URL Error deleting '{file_path_raw_1}': {e.reason}")
+except Exception as e: print(f"Unexpected error deleting '{file_path_raw_1}': {e}")
+
+
+# --- Example 2: Delete without message ---
+file_path_raw_2 = "data/another_file.txt" # Replace if already deleted
+file_path_encoded_2 = urllib.parse.quote(file_path_raw_2, safe='')
+url_2 = f"{base_url}/repo/{owner}/{repo_name}/file/{file_path_encoded_2}"
+headers_2 = {"X-API-Token": github_token}
+req_2 = urllib.request.Request(url_2, headers=headers_2, method='DELETE')
+
+print(f"\nAttempting to delete '{file_path_raw_2}' without message...")
+try:
+    with urllib.request.urlopen(req_2) as response:
+        print(f"File '{file_path_raw_2}' deleted successfully (Status: {response.status})")
+        response_body = response.read().decode('utf-8')
+        print(json.dumps(json.loads(response_body), indent=2))
+except HTTPError as e:
+    print(f"Failed to delete '{file_path_raw_2}': {e.code} {e.reason}")
+    try: print("Error details:", json.dumps(json.loads(e.read().decode('utf-8')), indent=2))
+    except (json.JSONDecodeError, AttributeError): print("Error details unreadable.")
+except URLError as e: print(f"URL Error deleting '{file_path_raw_2}': {e.reason}")
+except Exception as e: print(f"Unexpected error deleting '{file_path_raw_2}': {e}")
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                     <div class="code-example" data-lang="postman"> <!-- Added Postman Example -->
+                                        <p>Replace <code>{{base_url}}</code>, <code>{{owner}}</code>, <code>{{repo_name}}</code>, <code>{{file_path}}</code> (URL-encoded!), <code>{{YOUR_GITHUB_PAT}}</code>. Body is optional.</p>
+                                        <pre><code class="language-json">{
+  "method": "DELETE",
+  "url": "{{base_url}}/repo/{{owner}}/{{repo_name}}/file/{{file_path}}",
+  "header": [
+    // "Content-Type": "application/json" // Only needed IF sending body
+    { "key": "X-API-Token", "value": "{{YOUR_GITHUB_PAT}}" }
+  ],
+  "body": { // Optional body for custom commit message
+    "mode": "raw",
+    "raw": "{\n  \"message\": \"refactor: Remove file via Postman\"\n}"
+  }
+  // To send without body, set "body": null
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                     </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                    <hr/>
+
+                     <h2 id="release-management">Release Management</h2>
+
+                    <h3 id="create-release">Create Release</h3>
+                    <ul>
+                        <!-- Original content restored -->
+                        <li><strong>Endpoint:</strong> <code>POST /repo/{owner}/{repo_name}/release</code></li>
+                        <li><strong>Description:</strong> Creates a GitHub Release linked to an *existing* tag.</li>
+                         <div class="warning-box">
+                             <span class="material-icons-outlined">priority_high</span>
+                             <div><p><strong>Prerequisite:</strong> The specified <code>tag</code> must already exist in the repository (e.g., created via <code>git tag v1.0.0 && git push origin v1.0.0</code>) before calling this endpoint.</p></div>
+                         </div>
+                         <li><strong>URL Parameters:</strong>
+                            <ul>
+                                <li><code>{owner}</code>: Repository owner.</li>
+                                <li><code>{repo_name}</code>: Repository name.</li>
+                            </ul>
+                         </li>
+                        <li><strong>Authentication:</strong> Required (<code>repo</code> scope).</li>
+                        <li><strong>Request Body (JSON):</strong>
+                             <table class="param-table">
+                                <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>tag</code></td><td>string</td><td>Yes</td><td>Existing tag name (e.g., <code>v1.0.0</code>).</td></tr>
+                                    <tr><td><code>name</code></td><td>string</td><td>No</td><td>Release title. Default: Uses the <code>tag</code> name.</td></tr>
+                                    <tr><td><code>body</code></td><td>string</td><td>No</td><td>Release notes (Markdown supported). Default: <code>""</code>.</td></tr>
+                                    <tr><td><code>draft</code></td><td>boolean</td><td>No</td><td><code>true</code> to create as unpublished draft. Default: <code>false</code>.</td></tr>
+                                    <tr><td><code>prerelease</code></td><td>boolean</td><td>No</td><td><code>true</code> to mark as pre-release. Default: <code>false</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </li>
+                        <li><strong>Success Response (201 Created):</strong>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "id": 987654321, // GitHub Release ID
+    "tag_name": "v1.0.0",
+    "name": "Version 1.0.0 Release", // Or null if defaulted
+    "url": "https://github.com/owner/repo/releases/tag/v1.0.0",
+    "html_url": "https://github.com/owner/repo/releases/tag/v1.0.0", // Link to view
+    "upload_url": "https://uploads.github.com/repos/owner/repo/releases/987654321/assets{?name,label}", // Base URL for asset uploads
+    "draft": false,
+    "prerelease": false,
+    "body": "Release notes content..."
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                         <li><strong>Common Errors:</strong> <code>400</code>, <code>401</code>, <code>404</code> (Repo not found), <code>422</code> (Tag doesn't exist, release with tag already exists).</li>
+                        <li><strong>Request Examples:</strong>
+                            <div class="request-examples">
+                                <div class="example-tabs">
+                                    <button class="tab-button active" data-target-lang="curl">cURL</button>
+                                    <button class="tab-button" data-target-lang="python-requests">Python (requests)</button>
+                                    <button class="tab-button" data-target-lang="python-urllib">Python (urllib)</button>
+                                    <button class="tab-button" data-target-lang="postman">Postman</button> <!-- Added Postman Tab -->
+                                </div>
+                                <div class="example-content">
+                                    <div class="code-example active" data-lang="curl">
+                                        <pre><code class="language-bash"># Replace YOUR_GITHUB_PAT, your-user, your-repo
+# First, ensure tag v1.0.0 exists: git tag v1.0.0 && git push origin v1.0.0
+OWNER="your-user"
+REPO="my-api-created-repo"
+curl -X POST http://127.0.0.1:5000/repo/$OWNER/$REPO/release \
+ -H "Content-Type: application/json" \
+ -H "X-API-Token: YOUR_GITHUB_PAT" \
+ -d '{
+      "tag": "v1.0.0",
+      "name": "Version 1.0.0 Release",
+      "body": "### Major Features\n- Initial release with core functionality.\n\n### Known Issues\n- None reported.",
+      "draft": false,
+      "prerelease": false
+    }'</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-requests">
+                                        <pre><code class="language-python">import requests
+import json
+import os
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+endpoint = f"/repo/{owner}/{repo_name}/release"
+
+headers = {
+    "Content-Type": "application/json",
+    "X-API-Token": github_token
+}
+
+# Ensure the tag exists in your repo first!
+payload = {
+    "tag": "v1.0.1", # Replace with an existing tag
+    "name": "Feature Release 1.0.1",
+    "body": "Adds exciting new feature X.",
+    "draft": True, # Create as draft initially
+    "prerelease": False
+}
+
+try:
+    response = requests.post(base_url + endpoint, headers=headers, json=payload)
+    response.raise_for_status()
+    print(f"Release for tag '{payload['tag']}' created successfully:")
+    print(json.dumps(response.json(), indent=2))
+except requests.exceptions.RequestException as e:
+    print(f"An error occurred: {e}")
+    if e.response is not None:
+        try:
+            print("Error details:", json.dumps(e.response.json(), indent=2))
+        except json.JSONDecodeError:
+            print("Error details (non-JSON):", e.response.text)
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-urllib">
+                                        <pre><code class="language-python">import urllib.request
+import json
+import os
+from urllib.error import URLError, HTTPError
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+endpoint = f"/repo/{owner}/{repo_name}/release"
+url = base_url + endpoint
+
+headers = {
+    "Content-Type": "application/json",
+    "X-API-Token": github_token
+}
+
+# Ensure the tag exists in your repo first!
+payload = {
+    "tag": "v1.0.2", # Replace with an existing tag
+    "name": "Maintenance Release 1.0.2",
+    "body": "Fixes minor bugs.",
+    "draft": False,
+    "prerelease": True # Mark as pre-release
+}
+data = json.dumps(payload).encode('utf-8')
+
+req = urllib.request.Request(url, data=data, headers=headers, method='POST')
+
+try:
+    with urllib.request.urlopen(req) as response:
+        print(f"Release for tag '{payload['tag']}' created successfully (Status: {response.status})")
+        response_body = response.read().decode('utf-8')
+        print(json.dumps(json.loads(response_body), indent=2))
+except HTTPError as e:
+    print(f"HTTP Error: {e.code} {e.reason}")
+    try:
+        error_body = e.read().decode('utf-8')
+        print("Error details:", json.dumps(json.loads(error_body), indent=2))
+    except (json.JSONDecodeError, AttributeError):
+         print("Error details (non-JSON or unreadable):", getattr(e, 'fp', 'N/A').read() if hasattr(e, 'fp') else 'N/A')
+except URLError as e:
+    print(f"URL Error: {e.reason}")
+except Exception as e:
+    print(f"An unexpected error occurred: {e}")
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                     <div class="code-example" data-lang="postman"> <!-- Added Postman Example -->
+                                        <p>Replace <code>{{base_url}}</code>, <code>{{owner}}</code>, <code>{{repo_name}}</code>, <code>{{YOUR_GITHUB_PAT}}</code>. Ensure tag exists!</p>
+                                        <pre><code class="language-json">{
+  "method": "POST",
+  "url": "{{base_url}}/repo/{{owner}}/{{repo_name}}/release",
+  "header": [
+    { "key": "Content-Type", "value": "application/json" },
+    { "key": "X-API-Token", "value": "{{YOUR_GITHUB_PAT}}" }
+  ],
+  "body": {
+    "mode": "raw",
+    "raw": "{\n  \"tag\": \"v1.1.0-postman\",\n  \"name\": \"Release via Postman v1.1.0\",\n  \"body\": \"Release notes created from Postman example.\",\n  \"draft\": true,\n  \"prerelease\": false\n}"
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                     </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <h3 id="list-releases">List Releases</h3>
+                     <ul>
+                        <!-- Original content restored -->
+                        <li><strong>Endpoint:</strong> <code>GET /repo/{owner}/{repo_name}/releases</code></li>
+                        <li><strong>Description:</strong> Retrieves a list of all releases for the repository.</li>
+                         <li><strong>URL Parameters:</strong>
+                            <ul>
+                                <li><code>{owner}</code>: Repository owner.</li>
+                                <li><code>{repo_name}</code>: Repository name.</li>
+                            </ul>
+                         </li>
+                        <li><strong>Authentication:</strong> Required (<code>repo</code> scope).</li>
+                        <li><strong>Success Response (200 OK):</strong>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "releases": [
+      {
+        "id": 987654321,
+        "tag_name": "v1.0.0",
+        "name": "Version 1.0.0 Release",
+        "url": "https://api.github.com/repos/owner/repo/releases/987654321",
+        "html_url": "https://github.com/owner/repo/releases/tag/v1.0.0",
+        "draft": false,
+        "prerelease": false,
+        "created_at": "2023-01-10T10:00:00Z",
+        "published_at": "2023-01-10T10:05:00Z",
+        "assets": [ /* Basic asset info might be included here by PyGithub */ ]
+      },
+      // ... more releases
+    ]
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                        <li><strong>Common Errors:</strong> <code>401</code>, <code>404</code> (Repo not found).</li>
+                        <li><strong>Request Examples:</strong>
+                            <div class="request-examples">
+                                <div class="example-tabs">
+                                    <button class="tab-button active" data-target-lang="curl">cURL</button>
+                                    <button class="tab-button" data-target-lang="python-requests">Python (requests)</button>
+                                    <button class="tab-button" data-target-lang="python-urllib">Python (urllib)</button>
+                                    <button class="tab-button" data-target-lang="postman">Postman</button> <!-- Added Postman Tab -->
+                                </div>
+                                <div class="example-content">
+                                    <div class="code-example active" data-lang="curl">
+                                        <pre><code class="language-bash"># Replace YOUR_GITHUB_PAT, your-user, your-repo
+OWNER="your-user"
+REPO="my-api-created-repo"
+curl -H "X-API-Token: YOUR_GITHUB_PAT" \
+ http://127.0.0.1:5000/repo/$OWNER/$REPO/releases</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-requests">
+                                        <pre><code class="language-python">import requests
+import json
+import os
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+endpoint = f"/repo/{owner}/{repo_name}/releases"
+
+headers = {"X-API-Token": github_token}
+
+try:
+    response = requests.get(base_url + endpoint, headers=headers)
+    response.raise_for_status()
+    print(f"Releases for {owner}/{repo_name}:")
+    print(json.dumps(response.json(), indent=2))
+except requests.exceptions.RequestException as e:
+    print(f"An error occurred: {e}")
+    if e.response is not None:
+        try: print("Error details:", json.dumps(e.response.json(), indent=2))
+        except json.JSONDecodeError: print("Error details (non-JSON):", e.response.text)
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-urllib">
+                                        <pre><code class="language-python">import urllib.request
+import json
+import os
+from urllib.error import URLError, HTTPError
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+endpoint = f"/repo/{owner}/{repo_name}/releases"
+url = base_url + endpoint
+
+headers = {"X-API-Token": github_token}
+req = urllib.request.Request(url, headers=headers, method='GET')
+
+try:
+    with urllib.request.urlopen(req) as response:
+        print(f"Releases for {owner}/{repo_name} (Status: {response.status}):")
+        response_body = response.read().decode('utf-8')
+        print(json.dumps(json.loads(response_body), indent=2))
+except HTTPError as e:
+    print(f"HTTP Error: {e.code} {e.reason}")
+    try: print("Error details:", json.dumps(json.loads(e.read().decode('utf-8')), indent=2))
+    except (json.JSONDecodeError, AttributeError): print("Error details unreadable.")
+except URLError as e: print(f"URL Error: {e.reason}")
+except Exception as e: print(f"An unexpected error occurred: {e}")
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                     <div class="code-example" data-lang="postman"> <!-- Added Postman Example -->
+                                        <p>Replace <code>{{base_url}}</code>, <code>{{owner}}</code>, <code>{{repo_name}}</code>, <code>{{YOUR_GITHUB_PAT}}</code>.</p>
+                                        <pre><code class="language-json">{
+  "method": "GET",
+  "url": "{{base_url}}/repo/{{owner}}/{{repo_name}}/releases",
+  "header": [
+    { "key": "X-API-Token", "value": "{{YOUR_GITHUB_PAT}}" }
+  ],
+  "body": null
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                     </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <h3 id="delete-release">Delete Release</h3>
+                    <ul>
+                        <!-- Original content restored -->
+                         <li><strong>Endpoint:</strong> <code>DELETE /repo/{owner}/{repo_name}/release/{release_id_or_tag}</code></li>
+                        <li><strong>Description:</strong> Deletes a specific release *metadata*. It does **not** delete the associated Git tag.</li>
+                         <li><strong>URL Parameters:</strong>
+                            <ul>
+                                <li><code>{owner}</code>: Repository owner.</li>
+                                <li><code>{repo_name}</code>: Repository name.</li>
+                                <li><code>{release_id_or_tag}</code>: The numeric ID of the release OR the tag name associated with the release.</li>
+                            </ul>
+                         </li>
+                        <li><strong>Authentication:</strong> Required (<code>repo</code> scope).</li>
+                         <li><strong>Success Response (200 OK):</strong>
+                             <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "status": "deleted",
+    "release_id_or_tag": "v1.0.0" // The identifier used in the request URL
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                        <li><strong>Common Errors:</strong> <code>401</code>, <code>404</code> (Repo or release not found).</li>
+                         <li><strong>Request Examples:</strong>
+                            <div class="request-examples">
+                                <div class="example-tabs">
+                                    <button class="tab-button active" data-target-lang="curl">cURL</button>
+                                    <button class="tab-button" data-target-lang="python-requests">Python (requests)</button>
+                                    <button class="tab-button" data-target-lang="python-urllib">Python (urllib)</button>
+                                    <button class="tab-button" data-target-lang="postman">Postman</button> <!-- Added Postman Tab -->
+                                </div>
+                                <div class="example-content">
+                                    <div class="code-example active" data-lang="curl">
+                                        <pre><code class="language-bash"># Replace YOUR_GITHUB_PAT, your-user, your-repo
+OWNER="your-user"
+REPO="my-api-created-repo"
+
+# Example: Delete by Tag Name
+RELEASE_TAG="v1.0.1" # Replace with tag to delete
+curl -X DELETE -H "X-API-Token: YOUR_GITHUB_PAT" \
+ http://127.0.0.1:5000/repo/$OWNER/$REPO/release/$RELEASE_TAG
+
+# Example: Delete by Release ID (Assuming ID is 987654321)
+RELEASE_ID="987654321" # Replace with ID to delete
+curl -X DELETE -H "X-API-Token: YOUR_GITHUB_PAT" \
+ http://127.0.0.1:5000/repo/$OWNER/$REPO/release/$RELEASE_ID
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-requests">
+                                        <pre><code class="language-python">import requests
+import json
+import os
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+release_id_or_tag = "v1.0.1" # Replace with ID or tag to delete
+endpoint = f"/repo/{owner}/{repo_name}/release/{release_id_or_tag}"
+
+headers = {"X-API-Token": github_token}
+
+print(f"Attempting to delete release '{release_id_or_tag}'...")
+try:
+    response = requests.delete(base_url + endpoint, headers=headers)
+    response.raise_for_status()
+    print(f"Release '{release_id_or_tag}' deleted successfully:")
+    print(json.dumps(response.json(), indent=2))
+except requests.exceptions.RequestException as e:
+    print(f"An error occurred: {e}")
+    if e.response is not None:
+        try: print("Error details:", json.dumps(e.response.json(), indent=2))
+        except json.JSONDecodeError: print("Error details (non-JSON):", e.response.text)
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-urllib">
+                                        <pre><code class="language-python">import urllib.request
+import json
+import os
+from urllib.error import URLError, HTTPError
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+release_id_or_tag = "v1.0.2" # Replace with ID or tag to delete
+endpoint = f"/repo/{owner}/{repo_name}/release/{release_id_or_tag}"
+url = base_url + endpoint
+
+headers = {"X-API-Token": github_token}
+req = urllib.request.Request(url, headers=headers, method='DELETE')
+
+print(f"Attempting to delete release '{release_id_or_tag}'...")
+try:
+    with urllib.request.urlopen(req) as response:
+        print(f"Release '{release_id_or_tag}' deleted successfully (Status: {response.status})")
+        response_body = response.read().decode('utf-8')
+        print(json.dumps(json.loads(response_body), indent=2))
+except HTTPError as e:
+    print(f"HTTP Error: {e.code} {e.reason}")
+    try: print("Error details:", json.dumps(json.loads(e.read().decode('utf-8')), indent=2))
+    except (json.JSONDecodeError, AttributeError): print("Error details unreadable.")
+except URLError as e: print(f"URL Error: {e.reason}")
+except Exception as e: print(f"An unexpected error occurred: {e}")
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="postman"> <!-- Added Postman Example -->
+                                        <p>Replace <code>{{base_url}}</code>, <code>{{owner}}</code>, <code>{{repo_name}}</code>, <code>{{release_id_or_tag}}</code>, <code>{{YOUR_GITHUB_PAT}}</code>.</p>
+                                        <pre><code class="language-json">{
+  "method": "DELETE",
+  "url": "{{base_url}}/repo/{{owner}}/{{repo_name}}/release/{{release_id_or_tag}}",
+  "header": [
+    { "key": "X-API-Token", "value": "{{YOUR_GITHUB_PAT}}" }
+  ],
+  "body": null
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                     </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                    <hr/>
+
+                    <h2 id="asset-management">Asset Management</h2>
+                    <p>Manage files (assets) attached to specific releases. See also the <a href="#special-workflow-asset-upload">Special Asset Upload Workflow</a>.</p>
+
+                    <h3 id="prepare-asset-upload">Prepare Asset Upload</h3>
+                    <ul>
+                        <!-- Original content restored -->
+                        <li><strong>Endpoint:</strong> <code>POST /repo/{owner}/{repo_name}/release/{release_id_or_tag}/asset</code></li>
+                        <li><strong>Description:</strong> **Does not upload the file.** Validates parameters, checks for conflicts, and returns details needed for the client-side upload script (see <a href="#special-workflow-asset-upload">Asset Upload Workflow</a>).</li>
+                         <li><strong>URL Parameters:</strong>
+                            <ul>
+                                <li><code>{owner}</code>: Repository owner.</li>
+                                <li><code>{repo_name}</code>: Repository name.</li>
+                                <li><code>{release_id_or_tag}</code>: ID or tag name of the target release.</li>
+                            </ul>
+                         </li>
+                        <li><strong>Authentication:</strong> Required (<code>repo</code> scope).</li>
+                        <li><strong>Request Body (JSON):</strong>
+                             <table class="param-table">
+                                <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>asset_path</code></td><td>string</td><td>Yes</td><td><strong>Local path</strong> on the client machine of the file to be uploaded.</td></tr>
+                                    <tr><td><code>asset_name</code></td><td>string</td><td>No</td><td>Desired filename on GitHub Releases. Default: Uses filename from <code>asset_path</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </li>
+                        <li><strong>Success Response (200 OK):</strong>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "message": "Asset validated. Use the following details with your upload script.",
+    "upload_details": {
+      "repo_full_name": "your-user/my-api-created-repo",
+      "release_id_or_tag": "v1.0.0", // Or the ID if used in request
+      "asset_path_local": "/path/on/client/build/app-linux.tar.gz", // From request
+      "asset_name_remote": "app-v1.0.0-linux-amd64.tar.gz", // Resolved name for GitHub
+      "release_upload_url": "https://uploads.github.com/repos/your-user/my-api-created-repo/releases/987654321/assets{?name,label}" // URL for upload.py
+    }
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                         <li><strong>Common Errors:</strong> <code>400</code>, <code>401</code>, <code>404</code> (Repo/Release not found), <code>409</code> (Asset name conflict).</li>
+                        <li><strong>Request Examples:</strong>
+                           <div class="request-examples">
+                                <div class="example-tabs">
+                                    <button class="tab-button active" data-target-lang="curl">cURL</button>
+                                    <button class="tab-button" data-target-lang="python-requests">Python (requests)</button>
+                                    <button class="tab-button" data-target-lang="python-urllib">Python (urllib)</button>
+                                    <button class="tab-button" data-target-lang="postman">Postman</button> <!-- Added Postman Tab -->
+                                </div>
+                                <div class="example-content">
+                                    <div class="code-example active" data-lang="curl">
+                                        <pre><code class="language-bash"># Replace YOUR_GITHUB_PAT, your-user, your-repo, v1.0.0
+# Remember this ONLY prepares the upload, use upload.py with the response!
+OWNER="your-user"
+REPO="my-api-created-repo"
+RELEASE_TAG="v1.0.0" # Or release ID
+curl -X POST http://127.0.0.1:5000/repo/$OWNER/$REPO/release/$RELEASE_TAG/asset \
+ -H "Content-Type: application/json" \
+ -H "X-API-Token: YOUR_GITHUB_PAT" \
+ -d '{
+      "asset_path": "/home/dev/projects/my-app/dist/my-app-v1.0.0.zip",
+      "asset_name": "my-application-windows-v1.0.0.zip"
+    }'</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-requests">
+                                        <pre><code class="language-python">import requests
+import json
+import os
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+release_id_or_tag = "v1.0.0" # Replace with target release ID or tag
+endpoint = f"/repo/{owner}/{repo_name}/release/{release_id_or_tag}/asset"
+
+headers = {
+    "Content-Type": "application/json",
+    "X-API-Token": github_token
+}
+
+# NOTE: The API server *does not* access this path. It's for the upload.py script.
+# Ensure this path exists on the machine where you'll run upload.py
+local_asset_path = "/path/to/your/local/build/artifact.tar.gz" # Replace
+remote_asset_name = "linux-amd64-v1.0.0.tar.gz" # Optional, replace if needed
+
+payload = {
+    "asset_path": local_asset_path,
+    "asset_name": remote_asset_name
+}
+
+print(f"Preparing upload for '{local_asset_path}' to release '{release_id_or_tag}'...")
+try:
+    response = requests.post(base_url + endpoint, headers=headers, json=payload)
+    response.raise_for_status()
+    print("Upload prepared successfully. Use these details with upload.py:")
+    upload_details = response.json().get("data", {}).get("upload_details", {})
+    print(json.dumps(upload_details, indent=2))
+    # You would typically save 'upload_details' to a file or pass it to upload.py
+    # e.g., with open("upload_details.json", "w") as f: json.dump(upload_details, f)
+except requests.exceptions.RequestException as e:
+    print(f"An error occurred: {e}")
+    if e.response is not None:
+        try: print("Error details:", json.dumps(e.response.json(), indent=2))
+        except json.JSONDecodeError: print("Error details (non-JSON):", e.response.text)
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-urllib">
+                                        <pre><code class="language-python">import urllib.request
+import json
+import os
+from urllib.error import URLError, HTTPError
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+release_id_or_tag = "v1.0.0" # Replace
+endpoint = f"/repo/{owner}/{repo_name}/release/{release_id_or_tag}/asset"
+url = base_url + endpoint
+
+headers = {
+    "Content-Type": "application/json",
+    "X-API-Token": github_token
+}
+
+local_asset_path = "/another/path/app.dmg" # Replace
+remote_asset_name = "macOS-installer-v1.0.0.dmg" # Optional, replace
+
+payload = {
+    "asset_path": local_asset_path,
+    "asset_name": remote_asset_name
+}
+data = json.dumps(payload).encode('utf-8')
+
+req = urllib.request.Request(url, data=data, headers=headers, method='POST')
+
+print(f"Preparing upload for '{local_asset_path}' to release '{release_id_or_tag}'...")
+try:
+    with urllib.request.urlopen(req) as response:
+        print(f"Upload prepared successfully (Status: {response.status}). Use details with upload.py:")
+        response_body = response.read().decode('utf-8')
+        upload_details = json.loads(response_body).get("data", {}).get("upload_details", {})
+        print(json.dumps(upload_details, indent=2))
+        # Save details: with open("upload_details.json", "w") as f: json.dump(upload_details, f)
+except HTTPError as e:
+    print(f"HTTP Error: {e.code} {e.reason}")
+    try: print("Error details:", json.dumps(json.loads(e.read().decode('utf-8')), indent=2))
+    except (json.JSONDecodeError, AttributeError): print("Error details unreadable.")
+except URLError as e: print(f"URL Error: {e.reason}")
+except Exception as e: print(f"An unexpected error occurred: {e}")
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                     <div class="code-example" data-lang="postman"> <!-- Added Postman Example -->
+                                        <p>Replace <code>{{base_url}}</code>, <code>{{owner}}</code>, <code>{{repo_name}}</code>, <code>{{release_id_or_tag}}</code>, <code>{{YOUR_GITHUB_PAT}}</code>. The <code>asset_path</code> is only used by the upload script later.</p>
+                                        <pre><code class="language-json">{
+  "method": "POST",
+  "url": "{{base_url}}/repo/{{owner}}/{{repo_name}}/release/{{release_id_or_tag}}/asset",
+  "header": [
+    { "key": "Content-Type", "value": "application/json" },
+    { "key": "X-API-Token", "value": "{{YOUR_GITHUB_PAT}}" }
+  ],
+  "body": {
+    "mode": "raw",
+    "raw": "{\n  \"asset_path\": \"/local/path/on/your/machine/asset.zip\",\n  \"asset_name\": \"asset-v1.0-postman.zip\"\n}"
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                     </div>
+                                </div>
+                            </div>
+                            <p>(Remember to use the output <code>upload_details</code> with the <code>upload.py</code> script).</p>
+                        </li>
+                    </ul>
+
+                    <h3 id="list-release-assets">List Release Assets</h3>
+                    <ul>
+                        <!-- Original content restored -->
+                         <li><strong>Endpoint:</strong> <code>GET /repo/{owner}/{repo_name}/release/{release_id_or_tag}/assets</code></li>
+                        <li><strong>Description:</strong> Lists all assets attached to a specific release.</li>
+                         <li><strong>URL Parameters:</strong>
+                            <ul>
+                                <li><code>{owner}</code>: Repository owner.</li>
+                                <li><code>{repo_name}</code>: Repository name.</li>
+                                <li><code>{release_id_or_tag}</code>: ID or tag name of the target release.</li>
+                            </ul>
+                         </li>
+                        <li><strong>Authentication:</strong> Required (<code>repo</code> scope).</li>
+                        <li><strong>Success Response (200 OK):</strong>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "assets": [
+      {
+        "id": 555111222,
+        "name": "my-application-windows-v1.0.0.zip",
+        "label": null, // Optional label
+        "size": 15728640, // Size in bytes
+        "content_type": "application/zip",
+        "state": "uploaded",
+        "download_count": 10,
+        "created_at": "2023-01-10T11:00:00Z",
+        "updated_at": "2023-01-10T11:00:00Z",
+        "browser_download_url": "https://github.com/your-user/my-api-created-repo/releases/download/v1.0.0/my-application-windows-v1.0.0.zip",
+        "url": "https://api.github.com/repos/your-user/my-api-created-repo/releases/assets/555111222"
+      }
+      // ... other assets for this release
+    ]
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                         <li><strong>Common Errors:</strong> <code>401</code>, <code>404</code> (Repo/Release not found).</li>
+                        <li><strong>Request Examples:</strong>
+                           <div class="request-examples">
+                                <div class="example-tabs">
+                                    <button class="tab-button active" data-target-lang="curl">cURL</button>
+                                    <button class="tab-button" data-target-lang="python-requests">Python (requests)</button>
+                                    <button class="tab-button" data-target-lang="python-urllib">Python (urllib)</button>
+                                     <button class="tab-button" data-target-lang="postman">Postman</button> <!-- Added Postman Tab -->
+                                </div>
+                                <div class="example-content">
+                                    <div class="code-example active" data-lang="curl">
+                                        <pre><code class="language-bash"># Replace YOUR_GITHUB_PAT, your-user, your-repo, v1.0.0
+OWNER="your-user"
+REPO="my-api-created-repo"
+RELEASE_TAG="v1.0.0" # Or release ID
+curl -H "X-API-Token: YOUR_GITHUB_PAT" \
+ http://127.0.0.1:5000/repo/$OWNER/$REPO/release/$RELEASE_TAG/assets</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-requests">
+                                        <pre><code class="language-python">import requests
+import json
+import os
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+release_id_or_tag = "v1.0.0" # Replace with release ID or tag
+endpoint = f"/repo/{owner}/{repo_name}/release/{release_id_or_tag}/assets"
+
+headers = {"X-API-Token": github_token}
+
+try:
+    response = requests.get(base_url + endpoint, headers=headers)
+    response.raise_for_status()
+    print(f"Assets for release '{release_id_or_tag}':")
+    print(json.dumps(response.json(), indent=2))
+except requests.exceptions.RequestException as e:
+    print(f"An error occurred: {e}")
+    if e.response is not None:
+        try: print("Error details:", json.dumps(e.response.json(), indent=2))
+        except json.JSONDecodeError: print("Error details (non-JSON):", e.response.text)
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-urllib">
+                                        <pre><code class="language-python">import urllib.request
+import json
+import os
+from urllib.error import URLError, HTTPError
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+release_id_or_tag = "v1.0.0" # Replace
+endpoint = f"/repo/{owner}/{repo_name}/release/{release_id_or_tag}/assets"
+url = base_url + endpoint
+
+headers = {"X-API-Token": github_token}
+req = urllib.request.Request(url, headers=headers, method='GET')
+
+try:
+    with urllib.request.urlopen(req) as response:
+        print(f"Assets for release '{release_id_or_tag}' (Status: {response.status}):")
+        response_body = response.read().decode('utf-8')
+        print(json.dumps(json.loads(response_body), indent=2))
+except HTTPError as e:
+    print(f"HTTP Error: {e.code} {e.reason}")
+    try: print("Error details:", json.dumps(json.loads(e.read().decode('utf-8')), indent=2))
+    except (json.JSONDecodeError, AttributeError): print("Error details unreadable.")
+except URLError as e: print(f"URL Error: {e.reason}")
+except Exception as e: print(f"An unexpected error occurred: {e}")
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                     <div class="code-example" data-lang="postman"> <!-- Added Postman Example -->
+                                        <p>Replace <code>{{base_url}}</code>, <code>{{owner}}</code>, <code>{{repo_name}}</code>, <code>{{release_id_or_tag}}</code>, <code>{{YOUR_GITHUB_PAT}}</code>.</p>
+                                        <pre><code class="language-json">{
+  "method": "GET",
+  "url": "{{base_url}}/repo/{{owner}}/{{repo_name}}/release/{{release_id_or_tag}}/assets",
+  "header": [
+    { "key": "X-API-Token", "value": "{{YOUR_GITHUB_PAT}}" }
+  ],
+  "body": null
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                     </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <h3 id="get-asset-download-url">Get Asset Download URL</h3>
+                    <ul>
+                        <!-- Original content restored -->
+                        <li><strong>Endpoint:</strong> <code>GET /repo/{owner}/{repo_name}/release/{release_id_or_tag}/asset/{asset_name}/url</code></li>
+                        <li><strong>Description:</strong> Retrieves details for a *specific* asset, including download URLs. Crucially, it attempts to resolve the final direct download URL (useful for scripts, especially for private repos, but may expire).</li>
+                         <li><strong>URL Parameters:</strong>
+                            <ul>
+                                <li><code>{owner}</code>: Repository owner.</li>
+                                <li><code>{repo_name}</code>: Repository name.</li>
+                                <li><code>{release_id_or_tag}</code>: ID or tag name of the target release.</li>
+                                <li><code>{asset_name}</code>: The exact filename of the asset (URL-encode if needed).</li>
+                            </ul>
+                         </li>
+                        <li><strong>Authentication:</strong> Required (<code>repo</code> scope).</li>
+                        <li><strong>Success Response (200 OK):</strong>
+                            <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "asset": {
+      "id": 555111222,
+      "name": "my-application-windows-v1.0.0.zip",
+      "size": 15728640,
+      "content_type": "application/zip",
+      "browser_download_url": "https://github.com/your-user/.../my-application-windows-v1.0.0.zip",
+      "api_url": "https://api.github.com/repos/your-user/.../assets/555111222",
+      "final_direct_url": "https://objects.githubusercontent.com/..." // Potentially temporary direct URL
+    }
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                        <li><strong>Common Errors:</strong> <code>401</code>, <code>404</code> (Repo/Release/Asset not found), <code>5xx</code> (Network error fetching final URL).</li>
+                        <li><strong>Request Examples:</strong>
+                             <div class="request-examples">
+                                <div class="example-tabs">
+                                    <button class="tab-button active" data-target-lang="curl">cURL</button>
+                                    <button class="tab-button" data-target-lang="python-requests">Python (requests)</button>
+                                    <button class="tab-button" data-target-lang="python-urllib">Python (urllib)</button>
+                                     <button class="tab-button" data-target-lang="postman">Postman</button> <!-- Added Postman Tab -->
+                                </div>
+                                <div class="example-content">
+                                    <div class="code-example active" data-lang="curl">
+                                        <pre><code class="language-bash"># Replace YOUR_GITHUB_PAT, your-user, your-repo, v1.0.0
+# URL-encode asset name if needed
+OWNER="your-user"
+REPO="my-api-created-repo"
+RELEASE_TAG="v1.0.0"
+ASSET_NAME="my-application-windows-v1.0.0.zip" # URL-encode if needed
+
+curl -H "X-API-Token: YOUR_GITHUB_PAT" \
+ http://127.0.0.1:5000/repo/$OWNER/$REPO/release/$RELEASE_TAG/asset/$ASSET_NAME/url</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-requests">
+                                        <pre><code class="language-python">import requests
+import json
+import os
+import urllib.parse
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+release_id_or_tag = "v1.0.0" # Replace
+asset_name_raw = "my-application-windows-v1.0.0.zip" # Replace
+asset_name_encoded = urllib.parse.quote(asset_name_raw, safe='')
+
+endpoint = f"/repo/{owner}/{repo_name}/release/{release_id_or_tag}/asset/{asset_name_encoded}/url"
+headers = {"X-API-Token": github_token}
+
+try:
+    response = requests.get(base_url + endpoint, headers=headers)
+    response.raise_for_status()
+    print(f"Details for asset '{asset_name_raw}':")
+    print(json.dumps(response.json(), indent=2))
+    # Extract the download URL:
+    # download_url = response.json().get("data", {}).get("asset", {}).get("final_direct_url")
+    # if download_url: print(f"\nDirect Download URL: {download_url}")
+
+except requests.exceptions.RequestException as e:
+    print(f"An error occurred: {e}")
+    if e.response is not None:
+        try: print("Error details:", json.dumps(e.response.json(), indent=2))
+        except json.JSONDecodeError: print("Error details (non-JSON):", e.response.text)
+
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-urllib">
+                                        <pre><code class="language-python">import urllib.request
+import urllib.parse
+import json
+import os
+from urllib.error import URLError, HTTPError
+
+github_token = os.environ.get("GITHUB_PAT")
+if not github_token: raise ValueError("GITHUB_PAT not set")
+
+base_url = "http://127.0.0.1:5000"
+owner = "your-user" # Replace
+repo_name = "my-api-created-repo" # Replace
+release_id_or_tag = "v1.0.0" # Replace
+asset_name_raw = "my-application-windows-v1.0.0.zip" # Replace
+asset_name_encoded = urllib.parse.quote(asset_name_raw, safe='')
+
+endpoint = f"/repo/{owner}/{repo_name}/release/{release_id_or_tag}/asset/{asset_name_encoded}/url"
+url = base_url + endpoint
+
+headers = {"X-API-Token": github_token}
+req = urllib.request.Request(url, headers=headers, method='GET')
+
+try:
+    with urllib.request.urlopen(req) as response:
+        print(f"Details for asset '{asset_name_raw}' (Status: {response.status}):")
+        response_body = response.read().decode('utf-8')
+        print(json.dumps(json.loads(response_body), indent=2))
+except HTTPError as e:
+    print(f"HTTP Error: {e.code} {e.reason}")
+    try: print("Error details:", json.dumps(json.loads(e.read().decode('utf-8')), indent=2))
+    except (json.JSONDecodeError, AttributeError): print("Error details unreadable.")
+except URLError as e: print(f"URL Error: {e.reason}")
+except Exception as e: print(f"An unexpected error occurred: {e}")
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                     <div class="code-example" data-lang="postman"> <!-- Added Postman Example -->
+                                        <p>Replace <code>{{base_url}}</code>, <code>{{owner}}</code>, <code>{{repo_name}}</code>, <code>{{release_id_or_tag}}</code>, <code>{{asset_name}}</code> (URL-encoded!), <code>{{YOUR_GITHUB_PAT}}</code>.</p>
+                                        <pre><code class="language-json">{
+  "method": "GET",
+  "url": "{{base_url}}/repo/{{owner}}/{{repo_name}}/release/{{release_id_or_tag}}/asset/{{asset_name}}/url",
+  "header": [
+    { "key": "X-API-Token", "value": "{{YOUR_GITHUB_PAT}}" }
+  ],
+  "body": null
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                     </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                    <hr/>
+
+                    <h2 id="helper-endpoints">Helper Endpoints</h2>
+
+                    <h3 id="get-upload-script">Get Upload Script</h3>
+                    <ul>
+                         <!-- Original content restored -->
+                         <li><strong>Endpoint:</strong> <code>GET /get/v1/upload-script</code></li>
+                        <li><strong>Description:</strong> Downloads the Python helper script (<code>upload.py</code>) needed for the actual asset upload process (see <a href="#special-workflow-asset-upload">Asset Upload Workflow</a>).</li>
+                        <li><strong>Authentication:</strong> None required.</li>
+                        <li><strong>Success Response (200 OK):</strong>
+                            <ul>
+                                <li><code>Content-Type: text/plain; charset=utf-8</code></li>
+                                <li><code>Content-Disposition: attachment; filename=upload.py</code></li>
+                                <li>Response Body: Raw Python code of the script.</li>
+                            </ul>
+                        </li>
+                         <li><strong>Request Examples:</strong>
+                            <div class="request-examples">
+                                <div class="example-tabs">
+                                    <button class="tab-button active" data-target-lang="curl">cURL</button>
+                                    <button class="tab-button" data-target-lang="python-requests">Python (requests)</button>
+                                    <button class="tab-button" data-target-lang="python-urllib">Python (urllib)</button>
+                                     <button class="tab-button" data-target-lang="postman">Postman</button> <!-- Added Postman Tab -->
+                                </div>
+                                <div class="example-content">
+                                    <div class="code-example active" data-lang="curl">
+                                        <pre><code class="language-bash"># Download the script and save as upload.py
+curl http://127.0.0.1:5000/get/v1/upload-script -o upload.py
+
+# View the script content directly
+curl http://127.0.0.1:5000/get/v1/upload-script
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-requests">
+                                        <pre><code class="language-python">import requests
+import os
+
+base_url = "http://127.0.0.1:5000"
+endpoint = "/get/v1/upload-script"
+output_filename = "upload_from_requests.py"
+
+print(f"Attempting to download upload script to '{output_filename}'...")
+try:
+    response = requests.get(base_url + endpoint, stream=True) # Use stream for potentially larger files
+    response.raise_for_status()
+
+    with open(output_filename, 'wb') as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            f.write(chunk)
+    print(f"Script successfully downloaded to {output_filename}")
+    # Optional: make executable
+    # os.chmod(output_filename, 0o755)
+
+except requests.exceptions.RequestException as e:
+    print(f"An error occurred during download: {e}")
+    if e.response is not None:
+        print(f"Status code: {e.response.status_code}")
+        # Server might not return JSON for this error
+        print("Error details (text):", e.response.text)
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="python-urllib">
+                                        <pre><code class="language-python">import urllib.request
+import shutil
+import os
+from urllib.error import URLError, HTTPError
+
+base_url = "http://127.0.0.1:5000"
+endpoint = "/get/v1/upload-script"
+url = base_url + endpoint
+output_filename = "upload_from_urllib.py"
+
+print(f"Attempting to download upload script to '{output_filename}'...")
+req = urllib.request.Request(url, method='GET')
+
+try:
+    with urllib.request.urlopen(req) as response, open(output_filename, 'wb') as out_file:
+        # Check if request was successful before writing
+        if response.status == 200:
+             shutil.copyfileobj(response, out_file)
+             print(f"Script successfully downloaded to {output_filename}")
+             # Optional: make executable
+             # os.chmod(output_filename, 0o755)
+        else:
+            print(f"Failed to download script. Status code: {response.status}")
+
+except HTTPError as e:
+    print(f"HTTP Error during download: {e.code} {e.reason}")
+    # Response body might not be useful here unless server sends specific error text
+except URLError as e:
+    print(f"URL Error during download: {e.reason}")
+except Exception as e:
+    print(f"An unexpected error occurred during download: {e}")
+
+</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                    </div>
+                                    <div class="code-example" data-lang="postman"> <!-- Added Postman Example -->
+                                        <p>Use Postman's "Send and Download" feature for this GET request. Replace <code>{{base_url}}</code> if needed.</p>
+                                        <pre><code class="language-json">{
+  "method": "GET",
+  "url": "{{base_url}}/get/v1/upload-script",
+  "header": [],
+  "body": null
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                                     </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+
+                </section>
+
+                <!-- Page 5: Special Workflow: Asset Upload -->
+                <section id="special-workflow-asset-upload" data-page-title="Asset Upload Workflow">
+                     <!-- Content as originally provided -->
+                    <p>Uploading release assets to GitHub via this API involves a specific two-step workflow designed to avoid the API server needing direct access to your local files.</p>
+
+                    <div class="info-box">
+                         <span class="material-icons-outlined">sync_alt</span>
+                        <div><p><strong>Workflow Overview:</strong> Prepare on API → Get Details → Run Client Script → Upload to GitHub.</p></div>
+                    </div>
+
+                    <h2 id="asset-upload-steps">Step-by-Step Process</h2>
+                    <ol>
+                        <li>
+                            <strong>Step 1: Prepare Upload (Client → API)</strong>
+                            <p>Send a <code>POST</code> request to the <a href="#prepare-asset-upload">Prepare Asset Upload</a> endpoint: <code>/repo/{owner}/{repo}/release/{id_or_tag}/asset</code>.</p>
+                            <p>Include the <strong>local path</strong> to your asset file (<code>asset_path</code>) and optionally the desired <code>asset_name</code> in the JSON body. Provide your PAT via headers.</p>
+                            <p>See the <a href="#prepare-asset-upload">Prepare Asset Upload Request Examples</a> for `curl`, Python, and Postman samples of this step.</p>
+                        </li>
+                        <li>
+                            <strong>Step 2: Receive Validation & Details (API → Client)</strong>
+                            <p>The API server validates the request (repo/release existence, token permissions, potential name conflicts). It **does not** access the local asset path provided.</p>
+                            <p>If valid, the API responds with <code>200 OK</code> and a JSON body containing the crucial <code>upload_details</code> object. This object includes the specific GitHub URL needed for the direct upload (<code>release_upload_url</code>).</p>
+                             <pre><code class="language-json">{
+  "success": true,
+  "data": {
+    "message": "Asset validated...",
+    "upload_details": {
+      "repo_full_name": "...",
+      "release_id_or_tag": "...",
+      "asset_path_local": "/local/path/to/my_asset.zip", // For client reference
+      "asset_name_remote": "asset-v1.zip",
+      "release_upload_url": "https://uploads.github.com/..." // Crucial URL
+    }
+  }
+}</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                             <p><strong>Important:</strong> Save this entire <code>upload_details</code> JSON object (or pass it directly) for the next step.</p>
+                        </li>
+                        <li>
+                            <strong>Step 3: Obtain Helper Script (Client)</strong>
+                            <p>If you don't have it already, download the <code>upload.py</code> script from the API server:</p>
+                            <pre><code class="language-bash">curl http://YOUR_API_SERVER/get/v1/upload-script -o upload.py
+chmod +x upload.py # Make executable if needed</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                            <p>See the <a href="#get-upload-script">Get Upload Script Request Examples</a> for how to do this programmatically.</p>
+                        </li>
+                         <li>
+                            <strong>Step 4: Execute Upload Script (Client)</strong>
+                            <p>Run the downloaded <code>upload.py</code> script on your local machine where the asset file resides. Provide two arguments:</p>
+                            <ol>
+                                <li>The path to a file containing the JSON <code>upload_details</code> from Step 2, OR the JSON string itself.</li>
+                                <li>Your GitHub PAT using the <code>--token</code> argument (or set the `GITHUB_PAT` environment variable).</li>
+                            </ol>
+                            <pre><code class="language-bash"># Option A: Save details to a file (e.g., details.json from Step 2)
+# Assuming upload_details.json contains the JSON output from Step 2
+python upload.py upload_details.json --token YOUR_GITHUB_PAT
+
+# Option B: Pass JSON as a string (ensure proper shell quoting!)
+# (Less practical for complex JSON, prefer file method)
+# UPLOAD_DETAILS_JSON='{"repo_full_name": ..., "release_upload_url": ...}' # Populate this
+# python upload.py "$UPLOAD_DETAILS_JSON" --token YOUR_GITHUB_PAT
+
+# Option C: Using Environment Variable for Token
+# export GITHUB_PAT="YOUR_GITHUB_PAT"
+# python upload.py upload_details.json</code><button class="copy-btn"><span class="material-icons-outlined">content_copy</span> Copy</button></pre>
+                        </li>
+                        <li>
+                            <strong>Step 5: Actual Upload (Helper Script → GitHub)</strong>
+                            <p>The <code>upload.py</code> script performs the following:</p>
+                            <ul>
+                                <li>Reads the <code>upload_details</code> JSON.</li>
+                                <li>Uses the provided <code>--token</code> (or environment variable) to authenticate with GitHub.</li>
+                                <li>Opens and reads the local file specified by <code>asset_path_local</code> from the details JSON.</li>
+                                <li>Uploads the file content directly to the specific <code>release_upload_url</code> provided by the API in Step 2, using the <code>asset_name_remote</code>.</li>
+                                <li>Prints progress and success/failure messages to the console.</li>
+                            </ul>
+                        </li>
+                    </ol>
+
+                    <h2 id="asset-upload-rationale">Rationale for this Workflow</h2>
+                    <p>This multi-step process ensures:</p>
+                    <ul>
+                        <li><strong>Security:</strong> The central API server never needs access to your local filesystem or the potentially large asset files themselves.</li>
+                        <li><strong>Efficiency:</strong> The heavy lifting of file transfer happens directly between the client machine (where the file is) and GitHub's upload infrastructure.</li>
+                        <li><strong>Flexibility:</strong> The API handles validation and coordination, while the client script handles the OS-specific file access and upload mechanics.</li>
+                    </ul>
+                </section>
+
+                <!-- Page 6: Conclusion -->
+                <section id="conclusion" data-page-title="Conclusion">
+                    <!-- Content as originally provided -->
+                   <p>The <code>gh-manager</code> API provides a streamlined, programmatic interface for common GitHub repository, file, and release management tasks.</p>
+
+                    <h2 id="conclusion-key-takeaways">Key Takeaways</h2>
+                    <ul>
+                        <li><strong>Authentication:</strong> Always provide a valid GitHub PAT with the necessary scopes (primarily <code>repo</code>) via the <code>X-API-Token</code> or <code>Authorization: Bearer</code> header.</li>
+                        <li><strong>Request/Response:</strong> Use JSON for request bodies and expect JSON responses. Pay attention to HTTP status codes and the <code>error</code> object for diagnostics.</li>
+                        <li><strong>Endpoints:</strong> Refer to the specific <a href="#api-endpoints">API Endpoints</a> documentation for details on paths, parameters, and expected behavior. Use the provided `curl`, Python, and Postman examples as starting points.</li>
+                        <li><strong>Asset Uploads:</strong> Follow the dedicated <a href="#special-workflow-asset-upload">two-step workflow</a> involving the "Prepare Asset Upload" endpoint and the client-side <code>upload.py</code> script.</li>
+                    </ul>
+
+                     <div class="info-box">
+                         <span class="material-icons-outlined">build_circle</span>
+                        <div><p><strong>Further Development:</strong> This API server can be extended to support more GitHub operations (e.g., branch management, pull requests, issues) by adding new Flask routes and corresponding PyGithub calls.</p></div>
+                     </div>
+
+                    <p>By understanding these concepts and workflows, you can effectively leverage the <code>gh-manager</code> API to automate your GitHub interactions.</p>
+                </section>
+
+            </main>
+
+            <aside class="right-sidebar" id="right-sidebar">
+                <div class="right-sidebar-inner">
+                    <h5>On this page</h5>
+                    <ul id="toc-list">
+                        <!-- TOC items will be generated by JS -->
+                    </ul>
+                </div>
+            </aside>
+        </div> <!-- End .main-content-area -->
+
+         <!-- Pagination (Common Footer for Main Content) -->
+        <footer class="pagination-nav-container">
+             <!-- This container ensures pagination aligns with main content area -->
+             <div class="pagination-nav-wrapper">
+                  <!-- This wrapper aligns with the main content column's width -->
+                <nav class="pagination-nav" id="pagination-nav">
+                    <a href="#" id="prev-page" class="nav-prev disabled">
+                        <span class="nav-direction">Previous</span>
+                        <span class="nav-title"></span>
+                    </a>
+                    <a href="#" id="next-page" class="nav-next disabled">
+                        <span class="nav-direction">Next</span>
+                        <span class="nav-title"></span>
+                    </a>
+                </nav>
+             </div>
+        </footer>
+
+    </div> <!-- End .container -->
+
+    <script>
+        // JavaScript with the corrected Copy Button logic (HTTP/HTTPS)
+        // All other original JS functionality remains unchanged.
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Elements ---
+            const modeToggle = document.getElementById('mode-toggle');
+            const menuToggle = document.getElementById('menu-toggle');
+            const closeSidebar = document.getElementById('close-sidebar');
+            const sidebar = document.getElementById('sidebar-nav');
+            const mainContent = document.getElementById('main-content');
+            const rightSidebar = document.getElementById('right-sidebar');
+            const tocList = document.getElementById('toc-list');
+            const prevPageLink = document.getElementById('prev-page');
+            const nextPageLink = document.getElementById('next-page');
+            const paginationContainer = document.getElementById('pagination-nav');
+            const body = document.body; // Reference body for overflow toggle
+
+            // Check if essential elements exist
+            if (!sidebar || !mainContent || !rightSidebar || !tocList || !prevPageLink || !nextPageLink || !paginationContainer || !modeToggle || !menuToggle || !closeSidebar) {
+                console.error("Essential UI elements not found. Some functionality might be impaired.");
+                 const firstSection = document.querySelector('.content > section');
+                 if (firstSection) firstSection.classList.add('active-page');
+                 if (paginationContainer) paginationContainer.style.visibility = 'hidden';
+                return;
+            }
+
+            const sidebarLinks = sidebar.querySelectorAll('a[data-page-id]');
+            const contentPages = mainContent.querySelectorAll('section');
+
+            // --- State ---
+            let currentPageId = null;
+            let pageOrder = [];
+            const pageTitles = {};
+            let tocScrollTimeout;
+            let currentObserver = null;
+
+            // --- Initial Setup: Populate State ---
+            try {
+                pageOrder = Array.from(sidebarLinks)
+                                 .map(link => link.dataset.pageId)
+                                 .filter(id => id && document.getElementById(id)); // Ensure linked page exists
+
+                contentPages.forEach(page => {
+                    if (page.id) {
+                        // Use provided title or generate one from ID
+                        pageTitles[page.id] = page.dataset.pageTitle || page.id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    }
+                });
+
+                if (pageOrder.length === 0) {
+                    throw new Error("No valid pages found linked from the sidebar.");
+                }
+            } catch (error) {
+                console.error("Error initializing page order or titles:", error);
+                // Fallback: Show first page found in content if possible
+                const firstSection = contentPages[0];
+                if (firstSection && firstSection.id) {
+                    firstSection.classList.add('active-page');
+                    currentPageId = firstSection.id;
+                    if (pageTitles[currentPageId]) { // Update title if we have one
+                        document.title = `${pageTitles[currentPageId]} - gh-manager API Docs`;
+                    }
+                     updatePagination(currentPageId); // Update pagination for the fallback page
+                     generateToc(firstSection); // Attempt to generate TOC
+                     initializeObserver(firstSection); // Attempt to initialize observer
+                } else {
+                    // If truly no pages, hide pagination
+                     if(paginationContainer) paginationContainer.style.visibility = 'hidden';
+                }
+                return; // Stop further execution in case of error
+            }
+
+            // --- Dark Mode ---
+            const applyDarkMode = (isDark) => {
+                body.classList.toggle('dark-mode', isDark);
+                if (applyDarkMode.triggeredByUser || localStorage.getItem('dark-mode') !== null) {
+                    localStorage.setItem('dark-mode', isDark ? 'true' : 'false'); // Store as string
+                }
+            };
+            applyDarkMode.triggeredByUser = false;
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+            const storedPreference = localStorage.getItem('dark-mode');
+            const initialDarkMode = storedPreference !== null ? storedPreference === 'true' : prefersDark.matches;
+            applyDarkMode(initialDarkMode);
+            modeToggle.addEventListener('click', () => {
+                applyDarkMode.triggeredByUser = true;
+                applyDarkMode(!body.classList.contains('dark-mode'));
+            });
+            prefersDark.addEventListener('change', (event) => {
+                // Only apply OS preference if user hasn't explicitly toggled
+                if (localStorage.getItem('dark-mode') === null) {
+                    applyDarkMode(event.matches);
+                }
+            });
+
+            // --- Mobile Sidebar Toggle & Interactions ---
+             function openMobileSidebar() {
+                 sidebar.classList.add('open');
+                 body.style.overflow = 'hidden'; // Prevent body scroll
+             }
+             function closeMobileSidebar() {
+                 sidebar.classList.remove('open');
+                 body.style.overflow = ''; // Restore body scroll
+             }
+            menuToggle.addEventListener('click', (e) => { e.stopPropagation(); openMobileSidebar(); });
+            closeSidebar.addEventListener('click', (e) => { e.stopPropagation(); closeMobileSidebar(); });
+            document.addEventListener('click', (event) => {
+                 if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+                     if (!sidebar.contains(event.target) && !menuToggle.contains(event.target)) {
+                         closeMobileSidebar();
+                     }
+                 }
+             });
+             sidebar.addEventListener('click', (event) => {
+                 if (event.target.closest('a[data-page-id]')) {
+                      if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+                          closeMobileSidebar();
+                      }
+                 }
+             });
+
+
+            // --- Copy Button (Event Delegation with HTTP/HTTPS Fix) ---
+            mainContent.addEventListener('click', (event) => {
+                const copyBtn = event.target.closest('.copy-btn');
+                if (copyBtn) {
+                    const pre = copyBtn.closest('pre');
+                    const code = pre?.querySelector('code');
+                    const icon = copyBtn.querySelector('.material-icons-outlined');
+                    const originalIcon = icon?.textContent;
+
+                    if (code && icon && originalIcon && !copyBtn.classList.contains('copying')) {
+                        copyBtn.classList.add('copying');
+                        const textToCopy = code.textContent || code.innerText || '';
+                        let copySuccess = false;
+
+                        // --- START: HTTP/HTTPS Copy Logic ---
+                        if (window.isSecureContext && navigator.clipboard) {
+                            // Use modern Clipboard API in secure contexts (HTTPS, localhost)
+                            navigator.clipboard.writeText(textToCopy).then(() => {
+                                copySuccess = true;
+                                icon.textContent = 'check';
+                                copyBtn.classList.add('copied');
+                            }).catch(err => {
+                                console.error("Async clipboard copy failed:", err);
+                                copySuccess = false;
+                                icon.textContent = 'error_outline';
+                            }).finally(() => {
+                                setTimeout(() => {
+                                    copyBtn.classList.remove('copied');
+                                    icon.textContent = originalIcon;
+                                    copyBtn.classList.remove('copying');
+                                }, copySuccess ? 1500 : 2000);
+                            });
+                        } else {
+                            // Fallback using document.execCommand for non-secure contexts (HTTP)
+                            let textArea = document.createElement("textarea");
+                            try {
+                                textArea.style.position = 'fixed';
+                                textArea.style.top = '-9999px'; // Position off-screen
+                                textArea.style.left = '-9999px';
+                                textArea.style.width = '2em'; // Minimal size
+                                textArea.style.height = '2em';
+                                textArea.style.padding = '0';
+                                textArea.style.border = 'none';
+                                textArea.style.outline = 'none';
+                                textArea.style.boxShadow = 'none';
+                                textArea.style.background = 'transparent'; // Make invisible
+                                textArea.value = textToCopy;
+                                document.body.appendChild(textArea);
+                                textArea.focus(); // Focus is important
+                                textArea.select();
+                                copySuccess = document.execCommand('copy');
+
+                                if (copySuccess) {
+                                    icon.textContent = 'check';
+                                    copyBtn.classList.add('copied');
+                                } else {
+                                    console.warn("document.execCommand('copy') failed or was denied.");
+                                    icon.textContent = 'error_outline';
+                                }
+                            } catch (err) {
+                                console.error("Fallback clipboard copy failed:", err);
+                                copySuccess = false;
+                                icon.textContent = 'error_outline';
+                            } finally {
+                                document.body.removeChild(textArea);
+                                setTimeout(() => {
+                                    copyBtn.classList.remove('copied');
+                                    icon.textContent = originalIcon;
+                                    copyBtn.classList.remove('copying');
+                                }, copySuccess ? 1500 : 2000);
+                            }
+                        }
+                        // --- END: HTTP/HTTPS Copy Logic ---
+                    }
+                }
+            });
+
+             // --- Request Example Tabs (Event Delegation) ---
+            mainContent.addEventListener('click', (event) => {
+                const tabButton = event.target.closest('.tab-button');
+                if (!tabButton) return;
+                const targetLang = tabButton.dataset.targetLang;
+                if (!targetLang) return;
+                const examplesContainer = tabButton.closest('.request-examples');
+                if (!examplesContainer) return;
+                examplesContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                tabButton.classList.add('active');
+                examplesContainer.querySelectorAll('.code-example').forEach(content => {
+                    content.classList.toggle('active', content.dataset.lang === targetLang);
+                });
+            });
+
+
+            // --- TOC Generation ---
+            function generateToc(pageElement) {
+                 if (!pageElement || !tocList) { if (rightSidebar) rightSidebar.style.display = 'none'; return; }
+                 tocList.innerHTML = '';
+                 const headings = pageElement.querySelectorAll('h2[id], h3[id], h4[id]');
+                 if (headings.length === 0) { if (rightSidebar) rightSidebar.style.display = 'none'; return; }
+
+                headings.forEach(heading => {
+                    const listItem = document.createElement('li');
+                    const link = document.createElement('a');
+                    const headingId = heading.id;
+                    const headingText = (heading.textContent || heading.innerText || '').trim();
+                    if (!headingId || !headingText) return;
+
+                    link.href = `#${headingId}`;
+                    link.textContent = headingText;
+                    link.classList.add(`toc-${heading.tagName.toLowerCase()}`);
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const target = document.getElementById(headingId);
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            setTimeout(() => {
+                                if (window.location.hash !== `#${headingId}`) {
+                                    history.pushState({ pageId: currentPageId, sectionId: headingId }, '', `#${headingId}`);
+                                }
+                            }, 350);
+                        }
+                        if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+                            closeMobileSidebar();
+                        }
+                    });
+                    listItem.appendChild(link);
+                    tocList.appendChild(listItem);
+                });
+                 if (rightSidebar) {
+                     rightSidebar.style.display = window.innerWidth > 992 && tocList.children.length > 0 ? 'block' : 'none';
+                 }
+            }
+
+            // --- TOC Active State on Scroll ---
+            function initializeObserver(pageElement) {
+                if (currentObserver) currentObserver.disconnect();
+                if (!pageElement || !tocList) return;
+
+                const headerHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 60;
+                const rootMarginTop = `-${headerHeight + 15}px`;
+                const rootMarginBottom = "-40%";
+
+                try {
+                    currentObserver = new IntersectionObserver((entries) => {
+                        clearTimeout(tocScrollTimeout);
+                        tocScrollTimeout = setTimeout(() => {
+                            let bestVisibleHeadingId = null;
+                            let minTopValue = Infinity;
+                            entries.forEach(entry => {
+                                const headingId = entry.target.id;
+                                if (!headingId || !tocList.querySelector(`a[href="#${headingId}"]`)) return;
+                                const rect = entry.boundingClientRect;
+                                if (entry.isIntersecting && rect.top >= headerHeight + 10 && rect.top < minTopValue) {
+                                    minTopValue = rect.top;
+                                    bestVisibleHeadingId = headingId;
+                                }
+                            });
+                            if (!bestVisibleHeadingId) {
+                                const firstVisible = entries
+                                    .filter(e => e.isIntersecting && e.target.id && tocList.querySelector(`a[href="#${e.target.id}"]`))
+                                    .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+                                if (firstVisible) bestVisibleHeadingId = firstVisible.target.id;
+                            }
+                            tocList.querySelectorAll('a').forEach(link => {
+                                link.classList.toggle('toc-active', bestVisibleHeadingId && link.getAttribute('href') === `#${bestVisibleHeadingId}`);
+                            });
+                        }, 100);
+                    }, { rootMargin: `${rootMarginTop} 0px ${rootMarginBottom} 0px`, threshold: 0 });
+
+                    pageElement.querySelectorAll('h2[id], h3[id], h4[id]').forEach(heading => {
+                         if(heading.id) currentObserver.observe(heading);
+                     });
+                } catch(e) { console.error("Could not initialize IntersectionObserver:", e); }
+            }
+
+
+            // --- Pagination ---
+            function updatePagination(activePageId) {
+                 if (!paginationContainer || !prevPageLink || !nextPageLink) return;
+                 if (!activePageId || pageOrder.length === 0) { paginationContainer.style.visibility = 'hidden'; return; }
+                 const currentIndex = pageOrder.indexOf(activePageId);
+                 const prevTitleSpan = prevPageLink.querySelector('.nav-title');
+                 const nextTitleSpan = nextPageLink.querySelector('.nav-title');
+
+                if (currentIndex > 0) {
+                    const prevId = pageOrder[currentIndex - 1];
+                    prevPageLink.href = `#${prevId}`; prevPageLink.dataset.targetPage = prevId;
+                    if (prevTitleSpan) prevTitleSpan.textContent = pageTitles[prevId] || prevId;
+                    prevPageLink.classList.remove('disabled');
+                } else {
+                    prevPageLink.classList.add('disabled'); prevPageLink.href = '#';
+                    if (prevTitleSpan) prevTitleSpan.textContent = '';
+                    prevPageLink.removeAttribute('data-target-page');
+                }
+                if (currentIndex >= 0 && currentIndex < pageOrder.length - 1) {
+                    const nextId = pageOrder[currentIndex + 1];
+                    nextPageLink.href = `#${nextId}`; nextPageLink.dataset.targetPage = nextId;
+                    if(nextTitleSpan) nextTitleSpan.textContent = pageTitles[nextId] || nextId;
+                    nextPageLink.classList.remove('disabled');
+                } else {
+                    nextPageLink.classList.add('disabled'); nextPageLink.href = '#';
+                    if(nextTitleSpan) nextTitleSpan.textContent = '';
+                    nextPageLink.removeAttribute('data-target-page');
+                }
+                paginationContainer.style.visibility = pageOrder.length > 1 ? 'visible' : 'hidden';
+            }
+
+            // --- Page Switching Logic ---
+            function showPage(pageId, options = { updateHistory: true, scrollToTarget: true, subSectionId: null, forceScroll: false }) {
+                const pageToShow = pageId ? document.getElementById(pageId) : null;
+                if (!pageToShow) {
+                    console.warn(`Page with ID "${pageId}" not found. Attempting fallback.`);
+                     if (pageOrder.length > 0 && pageOrder[0] !== currentPageId) return showPage(pageOrder[0], { updateHistory: false, scrollToTarget: true });
+                    return false;
+                }
+                const currentHash = window.location.hash;
+                const targetPageHash = `#${pageId}`;
+                const targetSectionHash = options.subSectionId ? `#${options.subSectionId}` : targetPageHash;
+                if (pageId === currentPageId && currentHash === targetSectionHash && !options.forceScroll) return false;
+
+                currentPageId = pageId;
+                contentPages.forEach(page => page.classList.remove('active-page'));
+                pageToShow.classList.add('active-page');
+                sidebarLinks.forEach(link => link.classList.toggle('active', link.dataset.pageId === pageId));
+                generateToc(pageToShow);
+                initializeObserver(pageToShow);
+                updatePagination(pageId);
+
+                const newTitle = `${pageTitles[pageId] || pageId} - gh-manager API Docs`;
+                const newState = { pageId: pageId, sectionId: options.subSectionId };
+                if (options.updateHistory && window.location.hash !== targetSectionHash) {
+                    history.pushState(newState, '', targetSectionHash);
+                } else if (!options.updateHistory && window.location.hash !== targetSectionHash) {
+                    history.replaceState(newState, '', targetSectionHash);
+                }
+                if (document.title !== newTitle) document.title = newTitle;
+
+                if (options.scrollToTarget) {
+                    let elementToScrollId = options.subSectionId;
+                     if (!elementToScrollId && window.location.hash && window.location.hash !== targetPageHash && window.location.hash.length > 1) {
+                         const hashSectionId = decodeURIComponent(window.location.hash.substring(1));
+                          try { if (pageToShow.querySelector(`#${CSS.escape(hashSectionId)}`)) elementToScrollId = hashSectionId; } catch(e){}
+                     }
+                     if (elementToScrollId) attemptScrollToSubHash(`#${elementToScrollId}`);
+                     else window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                return true;
+            }
+
+            // Helper to scroll to an element ID
+            function attemptScrollToSubHash(hash) {
+                if (!hash || hash.length <= 1 || hash === '#') return;
+                try {
+                    const elementId = decodeURIComponent(hash.substring(1));
+                    const targetElement = document.getElementById(elementId);
+                    if (targetElement && mainContent.contains(targetElement)) {
+                         setTimeout(() => targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                    }
+                } catch (e) { console.error(`Error scrolling to hash ${hash}:`, e); }
+            }
+
+            // --- Event Listeners for Navigation ---
+            document.body.addEventListener('click', (event) => {
+                const link = event.target.closest('a[data-page-id], a[data-target-page]');
+                if (link && !link.classList.contains('disabled')) {
+                    event.preventDefault();
+                    const targetPageId = link.dataset.pageId || link.dataset.targetPage;
+                    if(targetPageId) showPage(targetPageId, { updateHistory: true, scrollToTarget: true, subSectionId: null });
+                }
+            });
+
+            // --- Initial Load & Hash Handling ---
+             function handleUrlChange(isInitialLoad = false) {
+                 let hash = window.location.hash; let targetPageId = null; let sectionId = null;
+                 if (hash && hash.length > 1) {
+                     const decodedHash = decodeURIComponent(hash.substring(1));
+                     for (const page of contentPages) { try { if (page.querySelector(`#${CSS.escape(decodedHash)}`)) { targetPageId = page.id; sectionId = decodedHash; break; } } catch (e) {} }
+                     if (!targetPageId && pageOrder.includes(decodedHash)) targetPageId = decodedHash;
+                 }
+                 if (!targetPageId && pageOrder.length > 0) {
+                     targetPageId = pageOrder[0]; sectionId = null;
+                     if (isInitialLoad && window.location.hash !== `#${targetPageId}`) history.replaceState({ pageId: targetPageId }, '', `#${targetPageId}`);
+                 }
+                 if (targetPageId) {
+                     const currentState = history.state || {};
+                     const needsHistoryReplace = isInitialLoad && (currentState.pageId !== targetPageId || currentState.sectionId !== sectionId);
+                     showPage(targetPageId, { updateHistory: !isInitialLoad && !needsHistoryReplace, scrollToTarget: true, subSectionId: sectionId, forceScroll: isInitialLoad });
+                 } else { console.warn("Could not determine a page to display."); if(paginationContainer) paginationContainer.style.visibility = 'hidden'; }
+             }
+            window.addEventListener('popstate', (event) => { handleUrlChange(false); });
+            window.addEventListener('resize', () => {
+                 const activePageElement = currentPageId ? document.getElementById(currentPageId) : null;
+                 if (rightSidebar) { const hasTocItems = tocList && tocList.children.length > 0; rightSidebar.style.display = window.innerWidth > 992 && hasTocItems ? 'block' : 'none'; }
+                 if (window.innerWidth > 768 && sidebar.classList.contains('open')) closeMobileSidebar();
+            });
+            handleUrlChange(true); // Initial Load
+
+        });
+    </script>
+</body>
+</html>
